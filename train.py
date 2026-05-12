@@ -13,7 +13,7 @@ from sklearn.metrics import mean_absolute_error
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 
 BASE_FEATURES = [
-    "year", "month", "day", "weekday",
+    "year", "month", "day", "weekday", "week_of_year",
     "is_weekend", "is_holiday",
     "is_school_holiday", "is_waseda_holiday",
     "temp_max", "temp_min", "temp_mean",
@@ -29,7 +29,7 @@ BASE_FEATURES = [
     "heat_excess", "is_hot_day", "is_very_hot",
 ]
 
-CYCLIC_FEATURES = ["month_sin", "month_cos", "weekday_sin", "weekday_cos"]
+CYCLIC_FEATURES = ["month_sin", "month_cos", "weekday_sin", "weekday_cos", "week_sin", "week_cos"]
 ALL_FEATURES = BASE_FEATURES + CYCLIC_FEATURES
 
 MIN_SALES_DAYS = 30
@@ -56,6 +56,8 @@ def add_cyclic_features(records):
         r["month_cos"] = np.cos(2 * np.pi * r["month"] / 12)
         r["weekday_sin"] = np.sin(2 * np.pi * r["weekday"] / 7)
         r["weekday_cos"] = np.cos(2 * np.pi * r["weekday"] / 7)
+        r["week_sin"] = np.sin(2 * np.pi * r["week_of_year"] / 52)
+        r["week_cos"] = np.cos(2 * np.pi * r["week_of_year"] / 52)
     return records
 
 

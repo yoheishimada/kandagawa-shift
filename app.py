@@ -611,11 +611,12 @@ def make_features(dt_str, weather):
     d = date.fromisoformat(dt_str)
     w = weather.get(dt_str, {})
     m, wd = d.month, d.weekday()
+    woy = d.isocalendar()[1]  # 年間何週目か（1〜52）
     sk = sakura_features(d)
     ts = tsuyu_features(d)
     ht = heat_features(w.get("temp_max", 20))
     return [
-        d.year, m, d.day, wd,
+        d.year, m, d.day, wd, woy,
         int(wd >= 5), int(_jpholiday.is_holiday(d)),
         int(in_period(dt_str, SCHOOL_HOLIDAYS)),
         int(in_period(dt_str, WASEDA_HOLIDAYS)),
@@ -629,6 +630,7 @@ def make_features(dt_str, weather):
         ht["heat_excess"], ht["is_hot_day"], ht["is_very_hot"],
         np.sin(2*np.pi*m/12), np.cos(2*np.pi*m/12),
         np.sin(2*np.pi*wd/7), np.cos(2*np.pi*wd/7),
+        np.sin(2*np.pi*woy/52), np.cos(2*np.pi*woy/52),
     ]
 
 

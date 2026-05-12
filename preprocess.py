@@ -277,6 +277,7 @@ def build_dataset():
             "month": d.month,
             "day": d.day,
             "weekday": d.weekday(),          # 0=月, 6=日
+            "week_of_year": d.isocalendar()[1],  # 年間何週目か（1〜52）
             "is_weekend": int(d.weekday() >= 5),
             "is_holiday": int(dt_str in NATIONAL_HOLIDAYS),
             "is_school_holiday": int(dt_str in school_set),
