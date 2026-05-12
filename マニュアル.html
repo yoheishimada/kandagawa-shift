@@ -243,9 +243,13 @@
   <!-- アプリを開く -->
   <section>
     <h2>アプリを開く</h2>
-    <p>スマホやタブレットのブラウザで下のアドレスを入力するだけ。</p>
-    <div class="url-box">http://192.168.1.225:8502</div>
-    <div class="note">📌 インストール不要。Wi-Fiにつながっていれば開けます。<br>オーナーのMacでアプリが起動していることが必要です。</div>
+    <p>スマホ・タブレット・パソコンのブラウザで下のアドレスを開くだけ。インターネットにつながっていればどこからでも使えます。</p>
+    <div class="url-box">kandagawa-bakery-production.up.railway.app</div>
+    <div style="margin: 20px 0;">
+      <p style="margin-bottom:8px;font-weight:600;">パスワード</p>
+      <div class="url-box" style="font-size:1.6rem;letter-spacing:0.08em;color:#1d1d1f;">Kandagawa0222</div>
+    </div>
+    <div class="note">📌 インストール不要。インターネット接続さえあればいつでも・どこからでも開けます。</div>
   </section>
 
   <!-- 毎日の使い方 -->
@@ -357,11 +361,21 @@
         <code>cd "/Users/shimadayohei/Desktop/神田川ベーカリー売り上げアプリ"
 python3 parse_sheets.py
 python3 build_calibration.py</code>
+        <span style="font-size:0.85rem;color:#6e6e73">スプレッドシートの実績を取り込み、ML補正係数を更新します</span>
       </div>
     </div>
     <div class="update-step">
       <div class="update-num">3</div>
-      <div>アプリを再起動する<br><span style="font-size:0.85rem;color:#6e6e73">ターミナルで Ctrl+C を押して停止 → 起動コマンドを再実行</span></div>
+      <div>続けて以下を実行してGitHubにアップロード
+        <code>git add calibration.pkl sheet_actuals.pkl
+git commit -m "月次更新"
+git push</code>
+        <span style="font-size:0.85rem;color:#6e6e73">pushすると自動でクラウドに反映されます（約2〜3分）</span>
+      </div>
+    </div>
+    <div class="update-step">
+      <div class="update-num">4</div>
+      <div>2〜3分後にアプリをリロードして確認<br><span style="font-size:0.85rem;color:#6e6e73">ブラウザで再読み込み（F5 または ⌘R）するだけです</span></div>
     </div>
   </section>
 
@@ -371,7 +385,11 @@ python3 build_calibration.py</code>
     <table class="trouble-table">
       <tr>
         <td>アプリが開かない</td>
-        <td>MacでアプリとWi-Fiの接続を確認してください</td>
+        <td>インターネット接続を確認してください。しばらく待ってから再度アクセスしてみてください</td>
+      </tr>
+      <tr>
+        <td>パスワードが通らない</td>
+        <td>大文字・小文字に注意して入力してください。コピー&貼り付けが確実です</td>
       </tr>
       <tr>
         <td>天気が取れないと表示される</td>
@@ -379,11 +397,11 @@ python3 build_calibration.py</code>
       </tr>
       <tr>
         <td>数字が古い気がする</td>
-        <td>アプリを再起動すると最新に更新されます</td>
+        <td>ブラウザを再読み込み（F5 または ⌘R）してください</td>
       </tr>
       <tr>
-        <td>起動時にエラーが出る</td>
-        <td>Google Driveの同期を一時停止してから再起動してください</td>
+        <td>月次更新後に反映されない</td>
+        <td>git pushから2〜3分待ってからブラウザを再読み込みしてください</td>
       </tr>
     </table>
   </section>
