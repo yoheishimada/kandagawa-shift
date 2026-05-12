@@ -669,6 +669,11 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
             normal_pred = max(1.0, sales_models["normal"].predict(X)[0])
             mode_pred   = max(0.0, sales_models[mode].predict(X)[0])
             mode_scale  = mode_pred / normal_pred
+            # 最低±10%の差を保証（逆転防止）
+            if mode == "bull":
+                mode_scale = max(mode_scale, 1.10)
+            elif mode == "bear":
+                mode_scale = min(mode_scale, 0.90)
         else:
             mode_scale = 1.0
 
