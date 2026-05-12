@@ -22,9 +22,22 @@ def check_password():
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
     if not st.session_state.authenticated:
-        st.markdown("## 🍞 神田川ベーカリー")
+        st.markdown("""
+        <style>
+        .stApp { background: #f7f4f0; }
+        .login-box { max-width: 360px; margin: 80px auto; padding: 2rem;
+                     background: #fff; border-radius: 16px;
+                     box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
+        .login-title { font-size: 1.8rem; font-weight: 700; color: #3d2b1f; margin-bottom: 0.3rem; }
+        .login-sub { color: #9a8070; font-size: 0.95rem; margin-bottom: 1.5rem; }
+        </style>
+        <div class="login-box">
+          <div class="login-title">🍞 神田川ベーカリー</div>
+          <div class="login-sub">売上予測 & 製造数プランナー</div>
+        </div>
+        """, unsafe_allow_html=True)
         password = st.text_input("パスワードを入力してください", type="password")
-        if st.button("ログイン"):
+        if st.button("ログイン", use_container_width=True):
             if password in ("Kandagawa0222", "Fang_Admiration_2010"):
                 st.session_state.authenticated = True
                 st.rerun()
