@@ -18,6 +18,22 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+def check_password():
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+    if not st.session_state.authenticated:
+        st.markdown("## 🍞 神田川ベーカリー")
+        password = st.text_input("パスワードを入力してください", type="password")
+        if st.button("ログイン"):
+            if password == "Kandagawa0222":
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("パスワードが違います")
+        st.stop()
+
+check_password()
+
 # ── カスタムCSS ──────────────────────────────────────────────
 st.markdown("""
 <style>
