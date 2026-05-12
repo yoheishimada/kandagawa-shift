@@ -61,6 +61,10 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; font-size:
 [data-testid="stSidebar"] {
     background: #ffffff;
     border-right: 2px solid #e8e0d8;
+    color: #2c2520 !important;
+}
+[data-testid="stSidebar"] * {
+    color: #2c2520 !important;
 }
 
 /* タイトルエリア */
