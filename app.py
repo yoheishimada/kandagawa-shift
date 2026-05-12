@@ -150,10 +150,10 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; font-size:
     content: ''; flex: 1; height: 1px; background: #2a2a35;
 }
 
-/* 検索ボックス */
-.stTextInput input {
-    background: #16161e !important; border: 1px solid #2a2a35 !important;
-    color: #e8e0d5 !important; border-radius: 8px !important;
+/* 入力フィールド */
+.stTextInput input, .stDateInput input {
+    background: #ffffff !important; border: 2px solid #e0d8d0 !important;
+    color: #2c2520 !important; border-radius: 8px !important;
 }
 
 /* メトリクスカード */
