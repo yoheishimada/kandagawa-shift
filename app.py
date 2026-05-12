@@ -316,9 +316,14 @@ def in_period(dt_str, periods):
 
 @st.cache_resource
 def load_models():
-    path = os.path.join(DATA_DIR, "models.pkl")
+    import gzip
+    gz_path = os.path.join(DATA_DIR, "models.pkl.gz")
+    pkl_path = os.path.join(DATA_DIR, "models.pkl")
     try:
-        with open(path, "rb") as f:
+        if os.path.exists(gz_path):
+            with gzip.open(gz_path, "rb") as f:
+                return pickle.load(f)
+        with open(pkl_path, "rb") as f:
             return pickle.load(f)
     except Exception as e:
         st.error(f"models.pkl の読み込みに失敗しました: {e}")
