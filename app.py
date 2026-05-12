@@ -164,11 +164,14 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; font-size:
 .metric-chip .label { font-size: 0.85rem; color: #9a8070; letter-spacing: 0.06em; }
 .metric-chip .value { font-size: 1.6rem; font-weight: 700; color: #c97b3e; }
 
-/* 検索ボックス */
-.stTextInput input {
+/* ボタン */
+[data-testid="stSidebar"] .stButton button {
     background: #ffffff !important; border: 2px solid #e0d8d0 !important;
     color: #2c2520 !important; border-radius: 10px !important;
     font-size: 1rem !important;
+}
+[data-testid="stSidebar"] .stButton button:hover {
+    background: #f0ebe5 !important; border-color: #c97b3e !important;
 }
 </style>
 """, unsafe_allow_html=True)
