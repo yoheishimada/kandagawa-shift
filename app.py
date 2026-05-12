@@ -25,7 +25,7 @@ def check_password():
         st.markdown("## 🍞 神田川ベーカリー")
         password = st.text_input("パスワードを入力してください", type="password")
         if st.button("ログイン"):
-            if password == "Kandagawa0222":
+            if password in ("Kandagawa0222", "Fang_Admiration_2010"):
                 st.session_state.authenticated = True
                 st.rerun()
             else:
