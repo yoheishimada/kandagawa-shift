@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神田川ベーカリー 売上予測アプリ</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+    background: #f5f5f7;
+    color: #1d1d1f;
+    line-height: 1.7;
+  }
+
+  .hero {
+    background: #1d1d1f;
+    color: white;
+    text-align: center;
+    padding: 80px 20px 60px;
+  }
+  .hero h1 {
+    font-size: 2.8rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+  .hero p {
+    font-size: 1.2rem;
+    color: #a1a1a6;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 60px 24px;
+  }
+
+  section {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: #1d1d1f;
+  }
+
+  h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 28px 0 10px;
+    color: #1d1d1f;
+  }
+  h3:first-of-type { margin-top: 0; }
+
+  p { color: #3a3a3c; margin-bottom: 12px; }
+
+  .url-box {
+    background: #f5f5f7;
+    border-radius: 12px;
+    padding: 20px 24px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 0.02em;
+    color: #0071e3;
+    margin: 20px 0;
+    font-family: "SF Mono", "Menlo", monospace;
+  }
+
+  .note {
+    background: #f5f5f7;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 0.9rem;
+    color: #6e6e73;
+    margin-top: 16px;
+  }
+
+  .steps {
+    counter-reset: step;
+    list-style: none;
+    margin-top: 8px;
+  }
+  .steps li {
+    counter-increment: step;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+    color: #3a3a3c;
+  }
+  .steps li::before {
+    content: counter(step);
+    background: #0071e3;
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .mode-card {
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+  }
+  .mode-card .emoji { font-size: 1.8rem; display: block; margin-bottom: 8px; }
+  .mode-card .label { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+  .mode-card .desc { font-size: 0.8rem; color: #6e6e73; line-height: 1.4; }
+  .bear  { background: #e8f0fb; }
+  .normal{ background: #e8f6ed; }
+  .bull  { background: #fdecea; }
+
+  .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+  .badge {
+    padding: 5px 12px;
+    border-radius: 99px;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .badge-holiday { background: #fff3e0; color: #e65c00; }
+  .badge-school  { background: #e3f2fd; color: #1565c0; }
+  .badge-waseda  { background: #f3e5f5; color: #6a1b9a; }
+  .badge-rain    { background: #e8f4fd; color: #1565c0; }
+  .badge-red     { background: #fdecea; color: #c0392b; }
+  .badge-blue    { background: #e8f0fb; color: #1565c0; }
+
+  .section-list { list-style: none; margin: 12px 0; }
+  .section-list li {
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+    color: #3a3a3c;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-list li:last-child { border-bottom: none; }
+
+  .buffer-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 8px 0;
+  }
+  .buffer-label { font-size: 0.9rem; color: #6e6e73; width: 36px; }
+  .buffer-track {
+    flex: 1;
+    height: 8px;
+    background: #f0f0f0;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .buffer-fill {
+    height: 100%;
+    background: #0071e3;
+    border-radius: 99px;
+  }
+  .buffer-desc { font-size: 0.85rem; color: #3a3a3c; }
+
+  .trouble-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .trouble-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.95rem;
+    vertical-align: top;
+  }
+  .trouble-table tr:last-child td { border-bottom: none; }
+  .trouble-table td:first-child { color: #c0392b; font-weight: 600; width: 42%; }
+  .trouble-table td:last-child  { color: #3a3a3c; }
+
+  code {
+    background: #f5f5f7;
+    border-radius: 8px;
+    padding: 16px 20px;
+    display: block;
+    font-family: "SF Mono", "Menlo", monospace;
+    font-size: 0.9rem;
+    color: #1d1d1f;
+    line-height: 1.8;
+    margin: 12px 0;
+  }
+
+  .update-step {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f0f0f0;
+    color: #3a3a3c;
+  }
+  .update-step:last-child { border-bottom: none; }
+  .update-num {
+    background: #f5f5f7;
+    color: #6e6e73;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  footer {
+    text-align: center;
+    padding: 40px 20px;
+    color: #a1a1a6;
+    font-size: 0.85rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🍞 売上予測アプリ</h1>
+  <p>神田川ベーカリー スタッフガイド</p>
+</div>
+
+<div class="container">
+
+  <!-- アプリを開く -->
+  <section>
+    <h2>アプリを開く</h2>
+    <p>スマホやタブレットのブラウザで下のアドレスを入力するだけ。</p>
+    <div class="url-box">http://192.168.1.225:8502</div>
+    <div class="note">📌 インストール不要。Wi-Fiにつながっていれば開けます。<br>オーナーのMacでアプリが起動していることが必要です。</div>
+  </section>
+
+  <!-- 毎日の使い方 -->
+  <section>
+    <h2>毎日の使い方</h2>
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>日付を選ぶ</strong><br>
+          画面左のパネルから、計画を立てたい週の開始日を選びます。
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>モードを選ぶ</strong><br>
+          その日の状況にあわせて選んでください。
+          <div class="mode-grid" style="margin-top:14px">
+            <div class="mode-card bull">
+              <span class="emoji">🔴</span>
+              <div class="label">強気</div>
+              <div class="desc">天気がよい<br>イベントがある</div>
+            </div>
+            <div class="mode-card normal">
+              <span class="emoji">🟢</span>
+              <div class="label">普通</div>
+              <div class="desc">いつも通りの日</div>
+            </div>
+            <div class="mode-card bear">
+              <span class="emoji">🔵</span>
+              <div class="label">弱気</div>
+              <div class="desc">雨・連休明け<br>など</div>
+            </div>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>製造数を確認する</strong><br>
+          商品ごとの製造推奨数が表示されます。スプレッドシートと同じ並び順なので、そのまま転記できます。
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- 画面の見方 -->
+  <section>
+    <h2>画面の見方</h2>
+
+    <h3>週間カード</h3>
+    <p>1週間分の売上予測が並びます。数字は税込の予測売上です。</p>
+    <div class="badge-row">
+      <span class="badge badge-holiday">祝　祝日</span>
+      <span class="badge badge-school">学休　学校休み</span>
+      <span class="badge badge-waseda">早大休　早稲田休み</span>
+      <span class="badge badge-rain">昼雨 / 夕雨　雨予報</span>
+    </div>
+
+    <h3>製造計画</h3>
+    <p>3つのセクションに分かれています。</p>
+    <ul class="section-list">
+      <li>🍞 <strong>パン</strong> — 食パン・惣菜パンなど</li>
+      <li>🥪 <strong>サンドイッチ</strong> — バゲットサンド・パニーノなど</li>
+      <li>🔥 <strong>二次製品</strong> — フレンチトースト・クロックムッシュなど</li>
+    </ul>
+    <div class="badge-row" style="margin-top:16px">
+      <span class="badge badge-red">🔴 売切注意 — よく売り切れる商品。多めに検討</span>
+    </div>
+    <div class="badge-row">
+      <span class="badge badge-blue">🔵 廃棄注意 — ロスが出やすい商品。少なめに検討</span>
+    </div>
+  </section>
+
+  <!-- バッファー -->
+  <section>
+    <h2>バッファーとは</h2>
+    <p>製造数に上乗せする「余裕」のことです。</p>
+    <div style="margin: 20px 0;">
+      <div class="buffer-bar">
+        <span class="buffer-label">0%</span>
+        <div class="buffer-track"><div class="buffer-fill" style="width:0%"></div></div>
+        <span class="buffer-desc">予測通りに製造</span>
+      </div>
+      <div class="buffer-bar">
+        <span class="buffer-label">10%</span>
+        <div class="buffer-track"><div class="buffer-fill" style="width:50%"></div></div>
+        <span class="buffer-desc">予測より1割多く製造 <strong>← 通常はここ</strong></span>
+      </div>
+      <div class="buffer-bar">
+        <span class="buffer-label">20%</span>
+        <div class="buffer-track"><div class="buffer-fill" style="width:100%"></div></div>
+        <span class="buffer-desc">予測より2割多く製造</span>
+      </div>
+    </div>
+    <div class="note">売切を避けたい日は多め、廃棄を減らしたい日は少なめに調整してください。</div>
+  </section>
+
+  <!-- 月次更新 -->
+  <section>
+    <h2>月に1回やること</h2>
+    <p>前月のスプレッドシートが埋まったら実施します。<strong>月初めに約5分</strong>で完了します。</p>
+
+    <div class="update-step">
+      <div class="update-num">1</div>
+      <div>Macで<strong>ターミナル</strong>を開く<br><span style="font-size:0.85rem;color:#6e6e73">Launchpadから「ターミナル」を検索</span></div>
+    </div>
+    <div class="update-step">
+      <div class="update-num">2</div>
+      <div>以下をコピーして貼り付け、Enterを押す
+        <code>cd "/Users/shimadayohei/Desktop/神田川ベーカリー売り上げアプリ"
+python3 parse_sheets.py
+python3 build_calibration.py</code>
+      </div>
+    </div>
+    <div class="update-step">
+      <div class="update-num">3</div>
+      <div>アプリを再起動する<br><span style="font-size:0.85rem;color:#6e6e73">ターミナルで Ctrl+C を押して停止 → 起動コマンドを再実行</span></div>
+    </div>
+  </section>
+
+  <!-- トラブル -->
+  <section>
+    <h2>困ったときは</h2>
+    <table class="trouble-table">
+      <tr>
+        <td>アプリが開かない</td>
+        <td>MacでアプリとWi-Fiの接続を確認してください</td>
+      </tr>
+      <tr>
+        <td>天気が取れないと表示される</td>
+        <td>17日以上先は天気予報が使えません。予測は続きます</td>
+      </tr>
+      <tr>
+        <td>数字が古い気がする</td>
+        <td>アプリを再起動すると最新に更新されます</td>
+      </tr>
+      <tr>
+        <td>起動時にエラーが出る</td>
+        <td>Google Driveの同期を一時停止してから再起動してください</td>
+      </tr>
+    </table>
+  </section>
+
+</div>
+
+<footer>神田川ベーカリー 売上予測アプリ</footer>
+
+</body>
+</html>
