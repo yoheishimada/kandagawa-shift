@@ -488,6 +488,25 @@ def compute_sheet_stats(sheet_data):
     return stats
 
 
+# ── Excelの生産表に基づく商品並び順（コピペ用） ──────────────────────
+EXCEL_PRODUCT_ORDER = [
+    "山食", "プチ", "塩ぱん", "あんこクリームチーズ", "クリームパン",
+    "カルダモンロール", "明太ハムロール（大葉入）", "カリカリソーセージカリー", "お豆のふんわり蒸しパン",
+    "レーズン食パン", "レーズンプチ", "シナモンロール", "クランベリースティック", "チョコチッププチ",
+    "ハム  or  ベーコンロール", "あんぱん", "黒豆ぱん",
+    "カンパーニュ（小)", "ハニークリームチーズ", "ショコラカンパーニュ", "柑橘ピール",
+    "あめ色玉ねぎとゴーダチーズ", "3種ナッツとホワイトチョコ",
+    "レーズン&くるみ（小）", "プレーンフォカッチャ", "アンチョビオリーブ", "ソーセージエピ",
+    "カレーパン", "スパイシーボロネーゼドッグ", "ソーセージとポテトのジェノベーゼフォカッチャ",
+    "3種のチーズぱん", "セミドライトマトとチーズのフォカッチャ",
+    "そら（枝）豆とゴーダチーズのフォカッチャ", "よもぎとクリームチーズ",
+    "バゲット", "大葉とベーコンのバゲット", "マカダミアナッツと黒胡椒のバゲット",
+    "チーズブール", "豆乳フランス", "あおさの豆乳フランス",
+    "きのこのクリームブリオッシュ", "メロンパン", "ブリオッシュシュクレ", "ブリオッシュナンテール",
+]
+EXCEL_ORDER = {name: idx for idx, name in enumerate(EXCEL_PRODUCT_ORDER)}
+
+
 def sheet_order_key(pos_name, sheet_order):
     """スプレッドシートの行順インデックスを返す（マッチしない場合は末尾）"""
     # 優先1: 完全一致
@@ -982,7 +1001,13 @@ date_cols = [f"{r['date'][5:]}({r['weekday']})" for r in results]
 
 # 商品をパン・サンドイッチ・二次製品に分離（スプレッドシートの行順でソート）
 def sort_by_sheet(products):
-    return sorted(products, key=lambda p: sheet_order_key(p, sheet_order))
+    # Excel生産表の順番を優先、なければGoogleスプレッドシート順
+    def sort_key(p):
+        excel_idx = sheet_order_key(p, EXCEL_ORDER)
+        if excel_idx < 9999:
+            return (0, excel_idx)
+        return (1, sheet_order_key(p, sheet_order))
+    return sorted(products, key=sort_key)
 
 bread_products_all    = sort_by_sheet(set(p for r in results for p in r["bread_products"]))
 sandwich_products_all = sort_by_sheet(set(p for r in results for p in r["sandwich_products"]))
