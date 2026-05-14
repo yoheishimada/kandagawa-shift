@@ -6,3 +6,4 @@ jpholiday
 scikit-learn
 gspread
 google-auth
+reportlab

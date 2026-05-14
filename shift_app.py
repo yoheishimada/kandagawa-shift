@@ -5,6 +5,14 @@ import pandas as pd
 import calendar
 import re
 import json
+import io
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 
 SPREADSHEET_ID = '1sVh4_9vbkucCRSenosYISpw_mFSsUioPLs0zBfxNT0U'
 APP_PASSWORD = 'Kandagawa0222'
@@ -171,6 +179,74 @@ def build_admin_ranking(df, date_cols):
     rank_df = pd.DataFrame(stats).T.sort_values('合計日数', ascending=False).astype(int)
     return rank_df
 
+def generate_shift_pdf(daily_shifts, year, month):
+    pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=landscape(A4),
+                            leftMargin=10*mm, rightMargin=10*mm,
+                            topMargin=10*mm, bottomMargin=10*mm)
+
+    styles = getSampleStyleSheet()
+    jp = ParagraphStyle('jp', fontName='HeiseiKakuGo-W5', fontSize=8, leading=11)
+    jp_small = ParagraphStyle('jp_small', fontName='HeiseiKakuGo-W5', fontSize=7, leading=10, textColor=colors.HexColor('#555555'))
+    title_style = ParagraphStyle('title', fontName='HeiseiKakuGo-W5', fontSize=14, leading=18)
+
+    day_names = ['月', '火', '水', '木', '金', '土', '日']
+    _, days_in_month = calendar.monthrange(year, month)
+    first_weekday = calendar.weekday(year, month, 1)
+
+    # カレンダーテーブルデータ作成
+    header = [Paragraph(d, jp) for d in day_names]
+    table_data = [header]
+
+    day = 1
+    for week in range(6):
+        if day > days_in_month:
+            break
+        row = []
+        for weekday in range(7):
+            if (week == 0 and weekday < first_weekday) or day > days_in_month:
+                row.append('')
+            else:
+                wname = day_names[calendar.weekday(year, month, day)]
+                date_label = f'{month}月{day}日（{wname}）'
+                shifts = daily_shifts.get(date_label, {'早': [], '遅': []})
+                cell_text = f'<b>{day}</b><br/>'
+                if shifts['早']:
+                    cell_text += '<font color="#155724">早番</font><br/>' + '<br/>'.join(shifts['早']) + '<br/>'
+                if shifts['遅']:
+                    cell_text += '<font color="#004085">遅番</font><br/>' + '<br/>'.join(shifts['遅'])
+                row.append(Paragraph(cell_text, jp))
+                day += 1
+        table_data.append(row)
+
+    col_width = (landscape(A4)[0] - 20*mm) / 7
+    row_height = (landscape(A4)[1] - 30*mm) / (len(table_data))
+
+    t = Table(table_data, colWidths=[col_width]*7, rowHeights=[10*mm] + [row_height]*(len(table_data)-1))
+    t.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'HeiseiKakuGo-W5'),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3d3d7a')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cccccc')),
+        ('BACKGROUND', (5, 1), (5, -1), colors.HexColor('#fff0f0')),
+        ('BACKGROUND', (6, 1), (6, -1), colors.HexColor('#f0f0ff')),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('LEFTPADDING', (0, 0), (-1, -1), 3),
+    ]))
+
+    elements = [
+        Paragraph(f'{year}年{month}月 シフト表　神田川ベーカリー', title_style),
+        Spacer(1, 4*mm),
+        t,
+    ]
+    doc.build(elements)
+    buf.seek(0)
+    return buf.read()
+
 # --- メイン ---
 df = load_data()
 
@@ -211,6 +287,16 @@ else:
     st.markdown(render_calendar(daily_shifts, year, month), unsafe_allow_html=True)
 
     if is_admin:
+        st.markdown('---')
+        st.subheader('📄 シフト表PDFダウンロード')
+        pdf_bytes = generate_shift_pdf(daily_shifts, year, month)
+        st.download_button(
+            label=f'{year}年{month}月 シフト表をPDFでダウンロード',
+            data=pdf_bytes,
+            file_name=f'shift_{year}_{month:02d}.pdf',
+            mime='application/pdf',
+        )
+
         st.markdown('---')
         st.subheader('👑 管理者ビュー：スタッフ出勤ランキング')
         st.caption('合計出勤日数が多いスタッフほど上位。シフト競合時の優先順位の参考に。')
