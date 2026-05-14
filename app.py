@@ -809,13 +809,45 @@ with st.sidebar:
     )
     st.divider()
 
+    # 前日の最終レジ時刻
+    st.markdown("### 🕐 前日の最終レジ時刻")
+    last_register = st.selectbox(
+        "前日の最終レジ時刻",
+        options=["未入力", "〜15時台（超早め）", "16時台", "17時台", "18時台以降"],
+        label_visibility="collapsed",
+        help="前日の最終レジ打刻時刻を選ぶと、予測モードを自動で提案します。"
+    )
+
+    # モード提案ロジック
+    if last_register == "〜15時台（超早め）":
+        suggested_mode = "bull"
+        suggestion_msg = "🔴 **強気を推奨** — 15時前に完売！生産数を増やせます"
+    elif last_register == "16時台":
+        suggested_mode = "bull"
+        suggestion_msg = "🔴 **強気を推奨** — 早めに売り切れ。需要に余裕あり"
+    elif last_register == "17時台":
+        suggested_mode = "normal"
+        suggestion_msg = "🟢 **普通を推奨** — 適正ペースで完売できています"
+    elif last_register == "18時台以降":
+        suggested_mode = "bear"
+        suggestion_msg = "🔵 **弱気を推奨** — 遅くまで残った日。作りすぎかも"
+    else:
+        suggested_mode = "normal"
+        suggestion_msg = None
+
+    if suggestion_msg:
+        st.info(suggestion_msg)
+
+    st.divider()
+
     # モード選択
     st.markdown("### 📊 予測モード")
+    default_index = ["bear", "normal", "bull"].index(suggested_mode)
     mode = st.radio(
         "予測モード選択",
         options=["bear", "normal", "bull"],
         format_func=lambda x: {"bear": "🔵 弱気予測", "normal": "🟢 普通予測", "bull": "🔴 強気予測"}[x],
-        index=1,
+        index=default_index,
         label_visibility="collapsed",
     )
     mode_color = MODE_COLORS[mode]
