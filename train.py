@@ -37,6 +37,16 @@ ALL_FEATURES = BASE_FEATURES + CYCLIC_FEATURES
 MIN_SALES_DAYS = 30
 QUANTILES = {"bear": 0.25, "normal": 0.50, "bull": 0.75}
 
+# 二次加工品：当日焼きパンにクリーム等を追加する商品
+# 生産数は元のパン（塩ぱん・プチ等）に依存するため個別予測は不要
+SECONDARY_PRODUCTS = {
+    "あんこ塩ぱん",
+    "あんこ塩パン",
+    "いちご練乳スティック",
+    "ミルククリームプチ",
+    "マロンクリームプチ",
+}
+
 
 def make_hgb(quantile=None):
     if quantile is not None:
@@ -127,7 +137,11 @@ def main():
     target_products = [
         p for p in all_products
         if sum(1 for r in records if r.get(f"qty_{p}", 0) > 0) >= MIN_SALES_DAYS
+        and p not in SECONDARY_PRODUCTS  # 二次加工品は除外
     ]
+    excluded = [p for p in all_products if p in SECONDARY_PRODUCTS]
+    if excluded:
+        print(f"  除外（二次加工品）: {excluded}")
     print(f"  対象: {len(target_products)}商品")
 
     product_models = {}

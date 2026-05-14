@@ -137,8 +137,9 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; font-size:
     border-top: 2px solid #d8cfc5; border-bottom: 1px solid #e0d8d0;
     text-align: left;
 }
-.badge-sellout { background: #fde8e8; color: #c0392b; border: 1.5px solid #e57373; }
-.badge-loss    { background: #fff8e1; color: #b07000; border: 1.5px solid #ffca28; }
+.badge-sellout   { background: #fde8e8; color: #c0392b; border: 1.5px solid #e57373; }
+.badge-loss      { background: #fff8e1; color: #b07000; border: 1.5px solid #ffca28; }
+.badge-secondary { background: #f0f4ff; color: #4a6fa5; border: 1.5px solid #a0b4d8; }
 
 /* セクションヘッダー */
 .section-header {
@@ -328,6 +329,16 @@ CATEGORY_GROUPS = [
 
 SECONDARY_CATEGORIES = {"二次製品他"}
 SANDWICH_CATEGORIES  = {"サンドイッチ・パニーノ"}
+
+# 二次加工品：当日焼きパンにクリーム等を追加して販売する商品
+# 生産数は元のパンに依存するため、生産表での個別予測は不要
+SECONDARY_PRODUCTS = {
+    "あんこ塩ぱん",
+    "あんこ塩パン",
+    "いちご練乳スティック",
+    "ミルククリームプチ",
+    "マロンクリームプチ",
+}
 
 
 def categorize_product(name):
@@ -996,12 +1007,22 @@ def build_product_table(products_list, results, date_cols, key_field="products",
                     indicator = ' <span class="badge badge-sellout">売切注意</span>'
                 elif stat["avg_loss_pct"] > 15:
                     indicator = ' <span class="badge badge-loss">廃棄注意</span>'
+            # 二次加工品バッジ
+            if p in SECONDARY_PRODUCTS:
+                indicator += ' <span class="badge badge-secondary">二次加工</span>'
             cells = f"<td>{p}{indicator}</td>"
             for r in results:
                 qty = r[key_field].get(p, 0)
-                color = "#b85c00" if qty >= 20 else "#d4830a" if qty >= 10 else "#5a4a40"
-                cells += f'<td style="color:{color}">{int(qty) if qty else "—"}</td>'
-            cells += f'<td style="color:#c97b3e;font-weight:700">{int(total)}</td>'
+                if p in SECONDARY_PRODUCTS:
+                    # 二次加工品は数量ではなく「元パン依存」と表示
+                    cells += '<td style="color:#9a8070;font-size:0.8rem">－</td>'
+                else:
+                    color = "#b85c00" if qty >= 20 else "#d4830a" if qty >= 10 else "#5a4a40"
+                    cells += f'<td style="color:{color}">{int(qty) if qty else "—"}</td>'
+            if p in SECONDARY_PRODUCTS:
+                cells += '<td style="color:#9a8070;font-size:0.8rem">元パン依存</td>'
+            else:
+                cells += f'<td style="color:#c97b3e;font-weight:700">{int(total)}</td>'
             rows_html += f"<tr>{cells}</tr>"
     if not rows_html:
         return ""
