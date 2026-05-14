@@ -344,6 +344,18 @@ SECONDARY_PRODUCTS = {
     "レーズンプチ（クリーム入り）",
 }
 
+# 食パン1斤→2斤 統合マッピング
+# 1斤は2斤を半分に切ったもの。製造は2斤単位で行うため、1斤の需要を2斤換算で加算する
+# キー: 1斤商品名（の部分文字列）, 値: 対応する2斤商品名（の部分文字列）
+SHOKUPAN_PAIRS = [
+    ("山食　プレーン1斤",  "山食　プレーン2斤"),
+    ("山食プレーン1斤",   "山食プレーン2斤"),   # 旧表記
+    ("山食　レーズン1斤", "山食　レーズン2斤"),
+    ("山食レーズン1斤",   "山食レーズン2斤"),   # 旧表記
+]
+# 1斤商品（表示上は「2斤に統合」バッジを付ける）
+SHOKUPAN_1KIN = {pair[0] for pair in SHOKUPAN_PAIRS}
+
 # 二次加工品のためにベースパンへ追加する数量（曜日別平均、4年間の実績から算出）
 # キー: ベースパン名, 値: {weekday(0=月〜6=日): 追加個数}
 SECONDARY_UPLIFT = {
@@ -765,6 +777,21 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
                     bread_products[product] = qty_buf
                 bread_excl += qty * price
 
+        # ── 食パン1斤→2斤 統合（製造は2斤単位のため）──────────────
+        for kin1, kin2 in SHOKUPAN_PAIRS:
+            # 1斤商品が lineup に含まれている場合のみ処理
+            prod1 = next((p for p in bread_products if kin1 in p or p in kin1), None)
+            prod2 = next((p for p in bread_products if kin2 in p or p in kin2), None)
+            if prod1 is None:
+                continue
+            qty1 = bread_products.pop(prod1)  # 1斤を製造数テーブルから除外
+            extra_2kin = int(np.ceil(qty1 / 2))  # 1斤2本 = 2斤1本
+            if prod2 is not None:
+                bread_products[prod2] = bread_products[prod2] + extra_2kin
+            elif extra_2kin > 0:
+                # 2斤がラインナップになければ新規追加
+                bread_products[kin2] = extra_2kin
+
         # ── 二次加工品用ベースパン追加数（曜日別平均）──────────────
         wd = d.weekday()
         for base_prod, uplift_by_wd in SECONDARY_UPLIFT.items():
@@ -1039,6 +1066,9 @@ def build_product_table(products_list, results, date_cols, key_field="products",
             # 二次加工品バッジ
             if p in SECONDARY_PRODUCTS:
                 indicator += ' <span class="badge badge-secondary">二次加工</span>'
+            # 食パン1斤バッジ（2斤に統合済み）
+            if any(kin1 in p or p in kin1 for kin1, _ in SHOKUPAN_PAIRS):
+                indicator += ' <span class="badge badge-secondary">2斤に統合</span>'
             cells = f"<td>{p}{indicator}</td>"
             for r in results:
                 qty = r[key_field].get(p, 0)
