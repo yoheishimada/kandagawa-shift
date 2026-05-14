@@ -77,10 +77,22 @@ def load_data():
             break
     if sheet is None:
         return None
-    records = sheet.get_all_records()
-    if not records:
+    # 列名重複に強いget_all_valuesを使用
+    values = sheet.get_all_values()
+    if len(values) < 2:
         return None
-    return pd.DataFrame(records)
+    headers = values[0]
+    # 重複列名に連番を付けてユニーク化
+    seen = {}
+    unique_headers = []
+    for h in headers:
+        if h in seen:
+            seen[h] += 1
+            unique_headers.append(f'{h}_{seen[h]}')
+        else:
+            seen[h] = 0
+            unique_headers.append(h)
+    return pd.DataFrame(values[1:], columns=unique_headers)
 
 def build_daily_shifts(df):
     date_cols = [c for c in df.columns if 'シフト希望' in c]
