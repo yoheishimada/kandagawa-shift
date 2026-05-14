@@ -214,6 +214,7 @@ def load_weather():
 def load_sales():
     daily_sales = defaultdict(float)
     daily_products = defaultdict(lambda: defaultdict(float))
+    daily_last_time = defaultdict(float)  # 日付 -> 最終レジ時刻（0時からの分数）
     latest_prices = {}  # product -> (date, unit_price)
 
     for filename in SALES_FILES:
@@ -244,6 +245,17 @@ def load_sales():
                 daily_sales[dt] += amount
                 daily_products[dt][product] += qty
 
+                # 最終レジ時刻を記録（最大値を保持）
+                time_str = row.get("時間", "").strip()
+                if time_str:
+                    try:
+                        h, m, s = time_str.split(":")
+                        t_min = int(h) * 60 + int(m) + int(s) / 60
+                        if t_min > daily_last_time[dt]:
+                            daily_last_time[dt] = t_min
+                    except ValueError:
+                        pass
+
                 # 最新単価を記録（日付が新しいものを優先）
                 if qty > 0 and amount > 0:
                     unit_price = amount / qty
@@ -252,7 +264,7 @@ def load_sales():
 
     # 日付情報を除いて単価だけのdictに変換
     latest_unit_prices = {p: price for p, (_, price) in latest_prices.items()}
-    return daily_sales, daily_products, latest_unit_prices
+    return daily_sales, daily_products, daily_last_time, latest_unit_prices
 
 
 def build_dataset():
@@ -263,11 +275,28 @@ def build_dataset():
     weather = load_weather()
 
     print("売上データを読み込み中...")
-    daily_sales, daily_products, latest_unit_prices = load_sales()
+    daily_sales, daily_products, daily_last_time, latest_unit_prices = load_sales()
+
+    # 前日の最終レジ時刻を引けるよう日付リストを準備
+    DEFAULT_CLOSE = 17 * 60  # デフォルト：17時（1020分）
+    dates_sorted = sorted(daily_sales.keys())
+    prev_close_map = {}
+    for i, dt_str in enumerate(dates_sorted):
+        if i == 0:
+            prev_close_map[dt_str] = DEFAULT_CLOSE
+        else:
+            prev_dt = dates_sorted[i - 1]
+            d_curr = date.fromisoformat(dt_str)
+            d_prev = date.fromisoformat(prev_dt)
+            # 前営業日が3日以内なら使用（週末・祝日を挟む場合も対応）
+            if (d_curr - d_prev).days <= 3:
+                prev_close_map[dt_str] = daily_last_time.get(prev_dt, DEFAULT_CLOSE)
+            else:
+                prev_close_map[dt_str] = DEFAULT_CLOSE
 
     print("データセットを結合中...")
     records = []
-    for dt_str in sorted(daily_sales.keys()):
+    for dt_str in dates_sorted:
         d = date.fromisoformat(dt_str)
         w = weather.get(dt_str, {})
 
@@ -298,6 +327,8 @@ def build_dataset():
             "rain_morning":       w.get("rain_morning", 0),        # 10時
             "is_rainy_lunch":   int(w.get("rain_lunch_total", 0) > 1.0),
             "is_rainy_evening": int(w.get("rain_evening_total", 0) > 1.0),
+            # 前日の最終レジ時刻（分）：売れ行きの勢いを表す指標
+            "prev_close_min": prev_close_map.get(dt_str, DEFAULT_CLOSE),
             "total_sales": daily_sales[dt_str],
             **sakura_features(d),
             **tsuyu_features(d),

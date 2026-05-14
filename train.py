@@ -27,6 +27,8 @@ BASE_FEATURES = [
     "is_tsuyu", "days_into_tsuyu",
     # 猛暑特徴量
     "heat_excess", "is_hot_day", "is_very_hot",
+    # 前日の最終レジ時刻（分）：前日の売れ行きの勢い
+    "prev_close_min",
 ]
 
 CYCLIC_FEATURES = ["month_sin", "month_cos", "weekday_sin", "weekday_cos", "week_sin", "week_cos"]

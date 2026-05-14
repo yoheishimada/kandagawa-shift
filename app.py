@@ -626,7 +626,7 @@ def get_lineup(dataset, base_date):
     return sorted(products), latest_dt
 
 
-def make_features(dt_str, weather):
+def make_features(dt_str, weather, prev_close_min=1020):
     d = date.fromisoformat(dt_str)
     w = weather.get(dt_str, {})
     m, wd = d.month, d.weekday()
@@ -647,6 +647,7 @@ def make_features(dt_str, weather):
         sk["sakura_score"], sk["days_from_mankai"], sk["is_sakura_peak"],
         ts["is_tsuyu"], ts["days_into_tsuyu"],
         ht["heat_excess"], ht["is_hot_day"], ht["is_very_hot"],
+        prev_close_min,  # 前日の最終レジ時刻（分）
         np.sin(2*np.pi*m/12), np.cos(2*np.pi*m/12),
         np.sin(2*np.pi*wd/7), np.cos(2*np.pi*wd/7),
         np.sin(2*np.pi*woy/52), np.cos(2*np.pi*woy/52),
@@ -675,7 +676,7 @@ def find_calib_for_pos(pos_name, calib_dict):
     return None
 
 
-def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffer_pct, calib=None):
+def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffer_pct, calib=None, prev_close_min=1020):
     lineup_set = set(lineup)
     calib = calib or {}
     sales_models = models.get("sales_models", {})
@@ -683,7 +684,9 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
     for i in range(7):
         d = start_date + timedelta(days=i)
         dt_str = d.isoformat()
-        X = np.array([make_features(dt_str, weather)])
+        # 初日のみ前日の最終時刻を使用、2日目以降はデフォルト（17時）
+        pcm = prev_close_min if i == 0 else 1020
+        X = np.array([make_features(dt_str, weather, pcm)])
 
         # モード別スケール係数（sales_modelsの分位点予測比率）
         if sales_models and mode != "normal":
@@ -761,9 +764,9 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
     return results
 
 
-def predict_all_modes(start_date, weather, models, lineup, latest_prices, buffer_pct, calib=None):
+def predict_all_modes(start_date, weather, models, lineup, latest_prices, buffer_pct, calib=None, prev_close_min=1020):
     return {
-        mode: predict_week(start_date, weather, models, lineup, latest_prices, mode, buffer_pct, calib)
+        mode: predict_week(start_date, weather, models, lineup, latest_prices, mode, buffer_pct, calib, prev_close_min)
         for mode in ["bear", "normal", "bull"]
     }
 
@@ -809,45 +812,27 @@ with st.sidebar:
     )
     st.divider()
 
-    # 前日の最終レジ時刻
+    # 前日の最終レジ時刻（モデルへの入力特徴量）
     st.markdown("### 🕐 前日の最終レジ時刻")
     last_register = st.selectbox(
         "前日の最終レジ時刻",
-        options=["未入力", "〜15時台（超早め）", "16時台", "17時台", "18時台以降"],
+        options=["〜15時台", "16時台", "17時台", "18時台以降"],
+        index=2,  # デフォルト：17時台
         label_visibility="collapsed",
-        help="前日の最終レジ打刻時刻を選ぶと、予測モードを自動で提案します。"
+        help="前日の最終レジ打刻時刻。予測モデルの入力として使われます。"
     )
-
-    # モード提案ロジック
-    if last_register == "〜15時台（超早め）":
-        suggested_mode = "bull"
-        suggestion_msg = "🔴 **強気を推奨** — 15時前に完売！生産数を増やせます"
-    elif last_register == "16時台":
-        suggested_mode = "bull"
-        suggestion_msg = "🔴 **強気を推奨** — 早めに売り切れ。需要に余裕あり"
-    elif last_register == "17時台":
-        suggested_mode = "normal"
-        suggestion_msg = "🟢 **普通を推奨** — 適正ペースで完売できています"
-    elif last_register == "18時台以降":
-        suggested_mode = "bear"
-        suggestion_msg = "🔵 **弱気を推奨** — 遅くまで残った日。作りすぎかも"
-    else:
-        suggested_mode = "normal"
-        suggestion_msg = None
-
-    if suggestion_msg:
-        st.info(suggestion_msg)
+    # 選択値を分数に変換してモデルへ渡す
+    prev_close_min = {"〜15時台": 900, "16時台": 990, "17時台": 1050, "18時台以降": 1110}[last_register]
 
     st.divider()
 
     # モード選択
     st.markdown("### 📊 予測モード")
-    default_index = ["bear", "normal", "bull"].index(suggested_mode)
     mode = st.radio(
         "予測モード選択",
         options=["bear", "normal", "bull"],
         format_func=lambda x: {"bear": "🔵 弱気予測", "normal": "🟢 普通予測", "bull": "🔴 強気予測"}[x],
-        index=default_index,
+        index=1,
         label_visibility="collapsed",
     )
     mode_color = MODE_COLORS[mode]
@@ -896,7 +881,7 @@ if not weather_available:
     weather = {}  # 空dictで make_features のデフォルト値を使用
 
 # 全モード予測
-all_results = predict_all_modes(start_date, weather, models, lineup, latest_prices, buffer_pct, calib)
+all_results = predict_all_modes(start_date, weather, models, lineup, latest_prices, buffer_pct, calib, prev_close_min)
 results = all_results[mode]
 
 # ── 週間売上カード ──
