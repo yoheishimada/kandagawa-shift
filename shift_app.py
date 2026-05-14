@@ -94,6 +94,26 @@ def load_data():
     df = df[df['お名前'] != '']  # 名前が空の行を除外
     return df if not df.empty else None
 
+@st.cache_data(ttl=300)
+def load_staff():
+    try:
+        credentials_info = dict(st.secrets['gcp_service_account'])
+        creds = Credentials.from_service_account_info(credentials_info, scopes=[
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive',
+        ])
+    except Exception:
+        KEY_FILE = '/Users/shimadayohei/kandagawa-bakery/kandagawa_shift_key.json'
+        creds = Credentials.from_service_account_file(KEY_FILE, scopes=[
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive',
+        ])
+    gc = gspread.authorize(creds)
+    sh = gc.open_by_key(SPREADSHEET_ID)
+    staff_sheet = sh.worksheet('スタッフ')
+    names = staff_sheet.col_values(1)[1:]
+    return [n for n in names if n]
+
 def build_daily_shifts(df):
     date_cols = [c for c in df.columns if 'シフト希望' in c]
     daily = {}
@@ -287,7 +307,14 @@ else:
     if not date_cols:
         date_cols = all_date_cols
 
-    st.caption(f'※5分ごとに自動更新　　{len(df)}名回答済み')
+    all_staff = load_staff()
+    submitted = set(df['お名前'].tolist())
+    not_submitted = [n for n in all_staff if n not in submitted]
+
+    st.caption(f'※5分ごとに自動更新　　{len(df)}名回答済み　／　未提出 {len(not_submitted)}名')
+
+    if not_submitted:
+        st.warning('📋 未提出のスタッフ：' + '　'.join(not_submitted))
 
     col1, col2 = st.columns(2)
     col1.success('■ 早番（10〜15時）')
