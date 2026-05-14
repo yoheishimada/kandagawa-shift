@@ -217,10 +217,20 @@ def load_sales():
     daily_last_time = defaultdict(float)  # 日付 -> 最終レジ時刻（0時からの分数）
     latest_prices = {}  # product -> (date, unit_price)
 
-    for filename in SALES_FILES:
+    # 自動取得CSVがあれば追加（Square APIからの日次データ）
+    auto_csv = "商品-square-auto.csv"
+    all_files = list(SALES_FILES)
+    if auto_csv not in all_files and os.path.exists(os.path.join(DATA_DIR, auto_csv)):
+        all_files.append(auto_csv)
+
+    for filename in all_files:
         path = os.path.join(DATA_DIR, filename)
-        with open(path, encoding="utf-16") as f:
-            reader = csv.DictReader(f, delimiter="\t")
+        # 自動取得CSVはUTF-8・カンマ区切り、既存CSVはUTF-16・タブ区切り
+        is_auto = filename == auto_csv
+        encoding = "utf-8" if is_auto else "utf-16"
+        delimiter = "," if is_auto else "\t"
+        with open(path, encoding=encoding) as f:
+            reader = csv.DictReader(f, delimiter=delimiter)
             for row in reader:
                 dt = row.get("日付", "").strip()
                 if not dt:
