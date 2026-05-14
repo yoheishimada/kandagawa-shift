@@ -762,6 +762,10 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
             # モード別スケール適用（弱気↓ / 強気↑）
             qty = qty * mode_scale
 
+            # 「その他」カテゴリ（焼き菓子・ドリンク等）は製造表・売上予測ともに除外
+            if categorize_product(product) == "その他":
+                continue
+
             qty_buf = int(np.ceil(qty * (1 + buffer_pct / 100)))
             price = latest_prices.get(product, 0)
             if is_secondary(product):
@@ -1108,10 +1112,9 @@ def sort_by_sheet(products):
 
 # 「その他」カテゴリ（焼き菓子・ドリンク等）は製造表に表示しない
 # 売上予測には含まれているが、製造計画の管理対象外
-bread_products_all    = sort_by_sheet(
+bread_products_all    = sort_by_sheet(set(
     p for r in results for p in r["bread_products"]
-    if categorize_product(p) != "その他"
-)
+))
 sandwich_products_all = sort_by_sheet(set(p for r in results for p in r["sandwich_products"]))
 secondary_products_all= sort_by_sheet(set(p for r in results for p in r["secondary_products"]))
 
