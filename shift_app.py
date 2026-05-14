@@ -77,22 +77,22 @@ def load_data():
             break
     if sheet is None:
         return None
-    # 列名重複に強いget_all_valuesを使用
     values = sheet.get_all_values()
     if len(values) < 2:
         return None
     headers = values[0]
-    # 重複列名に連番を付けてユニーク化
-    seen = {}
-    unique_headers = []
-    for h in headers:
-        if h in seen:
-            seen[h] += 1
-            unique_headers.append(f'{h}_{seen[h]}')
-        else:
-            seen[h] = 0
-            unique_headers.append(h)
-    return pd.DataFrame(values[1:], columns=unique_headers)
+    # フォームを作り直すと古い列が残るため、最後の「お名前」列以降を使用
+    last_name_idx = None
+    for i, h in enumerate(headers):
+        if h == 'お名前':
+            last_name_idx = i
+    if last_name_idx is None:
+        return None
+    relevant_headers = headers[last_name_idx:]
+    relevant_data = [row[last_name_idx:] for row in values[1:]]
+    df = pd.DataFrame(relevant_data, columns=relevant_headers)
+    df = df[df['お名前'] != '']  # 名前が空の行を除外
+    return df if not df.empty else None
 
 def build_daily_shifts(df):
     date_cols = [c for c in df.columns if 'シフト希望' in c]
