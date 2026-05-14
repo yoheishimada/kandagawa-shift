@@ -336,8 +336,22 @@ SECONDARY_PRODUCTS = {
     "あんこ塩ぱん",
     "あんこ塩パン",
     "いちご練乳スティック",
-    "ミルククリームプチ",
-    "マロンクリームプチ",
+    # プチ系クリーム入り（プレーンプチ・チョコプチ・レーズンプチをベースに使用）
+    "プレーンプチ（クリーム入り）",
+    "プレーンプチ（マロンミルククリーム入り）",
+    "プレーンプチ（レモンクリーム入り）",
+    "チョコチッププチ（クリーム入）",
+    "レーズンプチ（クリーム入り）",
+}
+
+# 二次加工品のためにベースパンへ追加する数量（曜日別平均、4年間の実績から算出）
+# キー: ベースパン名, 値: {weekday(0=月〜6=日): 追加個数}
+SECONDARY_UPLIFT = {
+    "塩ぱん":               {0: 10.3, 1:  9.0, 2: 12.1, 3: 11.7, 4: 11.4, 5: 18.3, 6: 18.0},
+    "クランベリーのスティックぱん": {0:  3.9, 1:  3.3, 2:  3.0, 3:  3.5, 4:  3.8, 5:  5.4, 6:  6.5},
+    "プレーンプチ":          {0:  3.7, 1:  3.5, 2:  3.5, 3:  3.6, 4:  3.6, 5:  4.9, 6:  4.6},
+    "チョコチッププチ":       {0:  1.8, 1:  1.6, 2:  1.5, 3:  1.8, 4:  1.4, 5:  2.0, 6:  2.4},
+    "レーズンプチ":          {0:  1.4, 1:  1.6, 2:  1.5, 3:  1.5, 4:  1.6, 5:  1.8, 6:  1.8},
 }
 
 
@@ -350,7 +364,8 @@ def categorize_product(name):
 
 
 def is_secondary(name):
-    return categorize_product(name) in SECONDARY_CATEGORIES
+    # SECONDARY_PRODUCTS セット（クリームプチ系を含む）または二次製品カテゴリに属する
+    return name in SECONDARY_PRODUCTS or categorize_product(name) in SECONDARY_CATEGORIES
 
 
 def is_sandwich(name):
@@ -749,6 +764,20 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
                 if qty_buf > 0:
                     bread_products[product] = qty_buf
                 bread_excl += qty * price
+
+        # ── 二次加工品用ベースパン追加数（曜日別平均）──────────────
+        wd = d.weekday()
+        for base_prod, uplift_by_wd in SECONDARY_UPLIFT.items():
+            if base_prod not in bread_products:
+                continue  # ラインナップにないベースパンはスキップ
+            extra_raw = uplift_by_wd.get(wd, 0)
+            if extra_raw <= 0:
+                continue
+            # バッファーも適用してから加算（安全マージンを確保）
+            extra_buf = int(np.ceil(extra_raw * (1 + buffer_pct / 100)))
+            bread_products[base_prod] = bread_products[base_prod] + extra_buf
+            # 売上計算用の原価にも加算（バッファーなしで加算）
+            bread_excl += extra_raw * latest_prices.get(base_prod, 0)
 
         w = weather.get(dt_str, {})
         results.append({
