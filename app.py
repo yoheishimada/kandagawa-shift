@@ -1106,7 +1106,12 @@ def sort_by_sheet(products):
         return (1, sheet_order_key(p, sheet_order))
     return sorted(products, key=sort_key)
 
-bread_products_all    = sort_by_sheet(set(p for r in results for p in r["bread_products"]))
+# 「その他」カテゴリ（焼き菓子・ドリンク等）は製造表に表示しない
+# 売上予測には含まれているが、製造計画の管理対象外
+bread_products_all    = sort_by_sheet(
+    p for r in results for p in r["bread_products"]
+    if categorize_product(p) != "その他"
+)
 sandwich_products_all = sort_by_sheet(set(p for r in results for p in r["sandwich_products"]))
 secondary_products_all= sort_by_sheet(set(p for r in results for p in r["secondary_products"]))
 
