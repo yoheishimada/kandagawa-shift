@@ -177,10 +177,27 @@ df = load_data()
 if df is None:
     st.warning('まだ回答がありません。スタッフがフォームを送信すると表示されます。')
 else:
-    date_cols = [c for c in df.columns if 'シフト希望' in c]
-    match = re.search(r'(\d+)月', date_cols[0]) if date_cols else None
-    month = int(match.group(1)) if match else 6
-    year = 2026
+    all_date_cols = [c for c in df.columns if 'シフト希望' in c]
+
+    # 最新月・年を自動取得
+    latest_year, latest_month = 2000, 1
+    for col in all_date_cols:
+        m = re.search(r'(\d{4})年(\d+)月', col)
+        if m:
+            y, mo = int(m.group(1)), int(m.group(2))
+        else:
+            m2 = re.search(r'(\d+)月', col)
+            mo = int(m2.group(1)) if m2 else 1
+            import datetime
+            y = datetime.date.today().year
+        if (y, mo) > (latest_year, latest_month):
+            latest_year, latest_month = y, mo
+    year, month = latest_year, latest_month
+
+    # 最新月の列だけ絞り込む
+    date_cols = [c for c in all_date_cols if f'{month}月' in c]
+    if not date_cols:
+        date_cols = all_date_cols
 
     st.caption(f'※5分ごとに自動更新　　{len(df)}名回答済み')
 
