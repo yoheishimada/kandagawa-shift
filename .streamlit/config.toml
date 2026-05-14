@@ -1,3 +1,2 @@
-[server]
-enableStaticServing = true
-headless = true
+[theme]
+base = "light"
