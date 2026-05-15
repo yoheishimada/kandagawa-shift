@@ -354,8 +354,8 @@ else:
                 if early_short or late_short:
                     pivot_rows.append({
                         '日付': date_label,
-                        '早番（10〜15時）': '人手不足' if early_short else '',
-                        '遅番（15〜19時）': '人手不足' if late_short else '',
+                        '早番（10〜15時）': '不足' if early_short else '',
+                        '遅番（15〜19時）': '不足' if late_short else '',
                     })
             pivot_df = pd.DataFrame(pivot_rows)
             st.dataframe(pivot_df, use_container_width=True, hide_index=True)
