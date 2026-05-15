@@ -342,8 +342,24 @@ else:
 
         if shortage_rows:
             shortage_df = pd.DataFrame(shortage_rows)
-            st.dataframe(shortage_df, use_container_width=True, hide_index=True)
-            csv = shortage_df.to_csv(index=False, encoding='utf-8-sig')
+            # 日付ごとに1行にまとめる
+            pivot_rows = []
+            _, days_in_month2 = calendar.monthrange(year, month)
+            for d in range(1, days_in_month2 + 1):
+                wname = day_names_list[calendar.weekday(year, month, d)]
+                date_label = f'{month}月{d}日（{wname}）'
+                shifts = daily_shifts.get(date_label, {'早': [], '遅': []})
+                early_short = not shifts['早']
+                late_short = not shifts['遅']
+                if early_short or late_short:
+                    pivot_rows.append({
+                        '日付': date_label,
+                        '早番（10〜15時）': '人手不足' if early_short else '',
+                        '遅番（15〜19時）': '人手不足' if late_short else '',
+                    })
+            pivot_df = pd.DataFrame(pivot_rows)
+            st.dataframe(pivot_df, use_container_width=True, hide_index=True)
+            csv = pivot_df.to_csv(index=False, encoding='utf-8-sig')
             st.download_button(
                 label='CSVでダウンロード',
                 data=csv,
