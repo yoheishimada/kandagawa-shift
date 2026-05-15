@@ -327,6 +327,33 @@ else:
 
     if is_admin:
         st.markdown('---')
+        st.subheader('⚠️ 人手不足リスト')
+        shortage_rows = []
+        _, days_in_month = calendar.monthrange(year, month)
+        day_names_list = ['月', '火', '水', '木', '金', '土', '日']
+        for d in range(1, days_in_month + 1):
+            wname = day_names_list[calendar.weekday(year, month, d)]
+            date_label = f'{month}月{d}日（{wname}）'
+            shifts = daily_shifts.get(date_label, {'早': [], '遅': []})
+            if not shifts['早']:
+                shortage_rows.append({'日付': date_label, 'シフト': '早番（10〜15時）'})
+            if not shifts['遅']:
+                shortage_rows.append({'日付': date_label, 'シフト': '遅番（15〜19時）'})
+
+        if shortage_rows:
+            shortage_df = pd.DataFrame(shortage_rows)
+            st.dataframe(shortage_df, use_container_width=True, hide_index=True)
+            csv = shortage_df.to_csv(index=False, encoding='utf-8-sig')
+            st.download_button(
+                label='CSVでダウンロード',
+                data=csv,
+                file_name=f'shortage_{year}_{month:02d}.csv',
+                mime='text/csv',
+            )
+        else:
+            st.success('全日程・全シフトに1名以上入っています！')
+
+        st.markdown('---')
         st.subheader('📄 シフト表PDFダウンロード')
         pdf_bytes = generate_shift_pdf(daily_shifts, year, month)
         st.download_button(
