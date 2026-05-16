@@ -6,6 +6,9 @@ import calendar
 import re
 import json
 import io
+import time
+import requests
+import jwt as pyjwt
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib import colors
 from reportlab.lib.units import mm
@@ -113,6 +116,88 @@ def load_staff():
     staff_sheet = sh.worksheet('スタッフ')
     names = staff_sheet.col_values(1)[1:]
     return [n for n in names if n]
+
+def get_lineworks_token():
+    """LINE WORKS Service Account認証でアクセストークンを取得"""
+    try:
+        lw = st.secrets["lineworks"]
+        client_id = lw["client_id"]
+        client_secret = lw["client_secret"]
+        service_account = lw["service_account"]
+        private_key = lw["private_key"]
+    except Exception as e:
+        return None, f"LINE WORKS secrets設定エラー: {e}"
+
+    payload = {
+        "iss": client_id,
+        "sub": service_account,
+        "iat": int(time.time()),
+        "exp": int(time.time()) + 3600,
+    }
+    try:
+        jwt_token = pyjwt.encode(payload, private_key, algorithm="RS256")
+    except Exception as e:
+        return None, f"JWT生成エラー: {e}"
+
+    try:
+        resp = requests.post(
+            "https://auth.worksmobile.com/oauth2/v2.0/token",
+            data={
+                "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                "assertion": jwt_token,
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "scope": "bot user.read",
+            },
+            timeout=10,
+        )
+        data = resp.json()
+        if "access_token" in data:
+            return data["access_token"], None
+        return None, f"トークン取得失敗: {data}"
+    except Exception as e:
+        return None, f"LINE WORKS APIエラー: {e}"
+
+
+def get_lineworks_users(access_token, domain_id):
+    """LINE WORKS全ユーザー一覧を取得（ページング対応）"""
+    users = []
+    cursor = None
+    for _ in range(20):  # 最大2000人
+        params = {"domainId": domain_id, "count": 100}
+        if cursor:
+            params["cursor"] = cursor
+        resp = requests.get(
+            "https://www.worksapis.com/v1.0/users",
+            headers={"Authorization": f"Bearer {access_token}"},
+            params=params,
+            timeout=10,
+        )
+        data = resp.json()
+        users.extend(data.get("users", []))
+        cursor = data.get("responseMetaData", {}).get("nextCursor")
+        if not cursor:
+            break
+    return users
+
+
+def send_lineworks_dm(access_token, bot_id, user_id, message):
+    """LINE WORKSユーザーにDMを送信。(status_code, response_body)を返す"""
+    resp = requests.post(
+        f"https://www.worksapis.com/v1.0/bots/{bot_id}/users/{user_id}/messages",
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+        },
+        json={"content": {"type": "text", "text": message}},
+        timeout=10,
+    )
+    try:
+        body = resp.json()
+    except Exception:
+        body = {}
+    return resp.status_code, body
+
 
 def build_daily_shifts(df):
     date_cols = [c for c in df.columns if 'シフト希望' in c]
@@ -366,6 +451,73 @@ else:
                 file_name=f'shortage_{year}_{month:02d}.csv',
                 mime='text/csv',
             )
+
+            st.markdown('---')
+            st.subheader('📨 シフト再調整依頼をLINE WORKSで送る')
+            shortage_lines = '\n'.join(
+                f"・{r['日付']}　{r['シフト']}" for r in shortage_rows
+            )
+            default_msg = (
+                f"【シフト再調整のお願い】\n\n"
+                f"{year}年{month}月の以下の日程でシフトが不足しています。\n"
+                f"入れる方はシフト申請フォームから再申請をお願いします。\n\n"
+                f"{shortage_lines}"
+            )
+            lw_message = st.text_area('送信メッセージ（編集可）', default_msg, height=220)
+
+            if st.button('📨 全スタッフにLINE WORKSで一斉送信'):
+                with st.spinner('LINE WORKSに接続中...'):
+                    token, err = get_lineworks_token()
+                if err:
+                    st.error(f'認証エラー: {err}')
+                else:
+                    try:
+                        domain_id = st.secrets["lineworks"]["domain_id"]
+                        bot_id = st.secrets["lineworks"]["bot_id"]
+                    except Exception as e:
+                        st.error(f'secrets設定エラー: {e}')
+                        st.stop()
+
+                    with st.spinner('ユーザー一覧を取得中...'):
+                        lw_users = get_lineworks_users(token, domain_id)
+
+                    # LINE WORKSの名前(姓+名)とスタッフリストをマッチング
+                    name_to_userid = {}
+                    for u in lw_users:
+                        un = u.get("userName", {})
+                        # 姓名を結合（姓+名、名+姓の両方を登録）
+                        full1 = un.get("lastName", "") + un.get("firstName", "")
+                        full2 = un.get("firstName", "") + un.get("lastName", "")
+                        uid = u.get("userId", "")
+                        if full1:
+                            name_to_userid[full1] = uid
+                        if full2 and full2 != full1:
+                            name_to_userid[full2] = uid
+
+                    sent, failed, unmatched = [], [], []
+                    progress = st.progress(0)
+                    for i, staff_name in enumerate(all_staff):
+                        progress.progress((i + 1) / len(all_staff))
+                        uid = name_to_userid.get(staff_name)
+                        if not uid:
+                            unmatched.append(staff_name)
+                            continue
+                        status, body = send_lineworks_dm(token, bot_id, uid, lw_message)
+                        if status in (200, 201):
+                            sent.append(staff_name)
+                        else:
+                            failed.append(f"{staff_name}（{status}）")
+                    progress.empty()
+
+                    if sent:
+                        st.success(f'✅ 送信成功 {len(sent)}名：' + '、'.join(sent))
+                    if failed:
+                        st.error(f'❌ 送信失敗 {len(failed)}名：' + '、'.join(failed))
+                    if unmatched:
+                        st.warning(
+                            f'⚠️ LINE WORKSアカウントが見つからなかったスタッフ {len(unmatched)}名：'
+                            + '、'.join(unmatched)
+                        )
         else:
             st.success('全日程・全シフトに1名以上入っています！')
 
