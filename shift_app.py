@@ -653,7 +653,7 @@ else:
 </div>
 """, unsafe_allow_html=True)
 
-    st.subheader(f'{year}年{month}月 シフト表')
+    st.subheader(f'{year}年{month}月 シフト申請状況')
     st.markdown(render_calendar(daily_shifts, year, month, staff_colors), unsafe_allow_html=True)
 
     if is_admin:
