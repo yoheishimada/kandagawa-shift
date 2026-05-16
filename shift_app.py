@@ -62,7 +62,7 @@ h2 {
     background-color: #1a1a1a !important;
     color: #ffffff !important;
     border: none !important;
-    border-radius: 20px !important;
+    border-radius: 6px !important;
     font-weight: 500 !important;
     font-size: 0.72rem !important;
     letter-spacing: 0.06em !important;
