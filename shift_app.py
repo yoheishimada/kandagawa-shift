@@ -486,101 +486,158 @@ def build_admin_ranking(df, date_cols):
     return rank_df
 
 def generate_staff_manual_pdf():
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable, Table, TableStyle
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.units import mm
     from reportlab.lib import colors
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+    from reportlab.lib.pagesizes import A4
 
     pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
     buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=(148*mm, 210*mm),
-                            leftMargin=14*mm, rightMargin=14*mm,
+    doc = SimpleDocTemplate(buf, pagesize=A4,
+                            leftMargin=16*mm, rightMargin=16*mm,
                             topMargin=12*mm, bottomMargin=12*mm)
 
     F = 'HeiseiKakuGo-W5'
-    BLACK = colors.HexColor('#1a1a1a')
-    GRAY  = colors.HexColor('#888888')
-    LIGHT = colors.HexColor('#f0ece6')
-    ACCENT= colors.HexColor('#4a90d9')
+    BLACK  = colors.HexColor('#1a1a1a')
+    GRAY   = colors.HexColor('#888888')
+    LGRAY  = colors.HexColor('#f5f5f5')
+    ACCENT = colors.HexColor('#4a90d9')
+    GREEN  = colors.HexColor('#10AC84')
+    WHITE  = colors.white
 
-    def s(name, size, bold=False, color=BLACK, align=0, leading=None):
+    def ps(name, size, color=BLACK, align=0, leading=None):
         return ParagraphStyle(name, fontName=F, fontSize=size,
                               textColor=color, alignment=align,
-                              leading=leading or size*1.5)
+                              leading=leading or size * 1.5)
+
+    W = 178*mm  # 有効幅
 
     elems = []
 
-    # タイトル
-    elems.append(Spacer(1, 4*mm))
-    elems.append(Paragraph('KANDAGAWA BAKERY', s('sub', 7, color=GRAY, align=1)))
+    # ── タイトル ──
+    elems.append(Paragraph('KANDAGAWA BAKERY', ps('sub', 7, GRAY, align=1)))
     elems.append(Spacer(1, 1*mm))
-    elems.append(Paragraph('シフト申請マニュアル', s('title', 16, align=1)))
+    elems.append(Paragraph('シフト申請マニュアル', ps('ttl', 18, BLACK, align=1)))
     elems.append(Spacer(1, 2*mm))
-    elems.append(HRFlowable(width='100%', thickness=1, color=BLACK))
-    elems.append(Spacer(1, 6*mm))
+    elems.append(HRFlowable(width='100%', thickness=1.5, color=BLACK))
+    elems.append(Spacer(1, 5*mm))
 
-    # フロー図
-    elems.append(Paragraph('申請の流れ', s('h', 10, color=GRAY)))
-    elems.append(Spacer(1, 3*mm))
+    # ── フロー図（横並び） ──
+    elems.append(Paragraph('申請の流れ', ps('lbl', 8, GRAY)))
+    elems.append(Spacer(1, 2*mm))
 
-    flow_steps = [
-        ('毎月25日', ACCENT),
-        ('LINE WORKSに吉田さんからメッセージが届く', BLACK),
-        ('メッセージ内のリンクをタップ', BLACK),
-        ('Googleフォームでシフト希望を入力・送信', BLACK),
-        ('完了！', colors.HexColor('#10AC84')),
+    def flow_box(text, bg, fg=WHITE, size=8):
+        return Paragraph(text, ParagraphStyle('fb', fontName=F, fontSize=size,
+                         textColor=fg, alignment=1, leading=size*1.4))
+
+    arrow = Paragraph('→', ps('arr', 10, GRAY, align=1))
+
+    flow_items = [
+        ('毎月\n25日', ACCENT),
+        ('LINE WORKSに\n吉田さんから\nメッセージ届く', BLACK),
+        ('リンクを\nタップ', BLACK),
+        ('フォームで\n希望を入力・\n送信', BLACK),
+        ('完了！', GREEN),
     ]
-    box_style = ParagraphStyle('box', fontName=F, fontSize=9, textColor=colors.white,
-                               alignment=1, leading=13)
-    arrow_style = s('arrow', 11, color=GRAY, align=1)
 
-    from reportlab.platypus import Table, TableStyle
-    for i, (text, bg) in enumerate(flow_steps):
-        tbl = Table([[Paragraph(text, ParagraphStyle('b', fontName=F, fontSize=9,
-                                textColor=colors.white, alignment=1, leading=13))]],
-                    colWidths=[100*mm], rowHeights=[10*mm])
-        tbl.setStyle(TableStyle([
+    bw = 28*mm
+    aw = 8*mm
+    row = []
+    for i, (text, bg) in enumerate(flow_items):
+        cell = Table([[flow_box(text, bg)]], colWidths=[bw], rowHeights=[16*mm])
+        cell.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,-1), bg),
             ('VALIGN',     (0,0), (-1,-1), 'MIDDLE'),
-            ('ROUNDEDCORNERS', [4]),
+            ('BOX',        (0,0), (-1,-1), 0.5, WHITE),
         ]))
-        elems.append(tbl)
-        if i < len(flow_steps) - 1:
-            elems.append(Paragraph('↓', arrow_style))
-    elems.append(Spacer(1, 6*mm))
-    elems.append(HRFlowable(width='100%', thickness=0.5, color=LIGHT))
-    elems.append(Spacer(1, 4*mm))
+        row.append(cell)
+        if i < len(flow_items) - 1:
+            row.append(Table([[arrow]], colWidths=[aw], rowHeights=[16*mm]))
 
-    # フォーム入力方法
-    elems.append(Paragraph('フォームの入力方法', s('h2', 10, color=GRAY)))
-    elems.append(Spacer(1, 3*mm))
-    steps = [
-        ('① 名前を選ぶ', 'リストから自分の名前を選んでください。'),
-        ('② シフトにチェックを入れる', '早番（10〜15時）・遅番（15〜19時）、入れる日にチェック。両方入れる日は両方チェック。'),
-        ('③ 送信する', '一番下の「送信」ボタンを押して完了。'),
+    col_widths = []
+    for i in range(len(flow_items)):
+        col_widths.append(bw)
+        if i < len(flow_items) - 1:
+            col_widths.append(aw)
+
+    flow_tbl = Table([row], colWidths=col_widths)
+    flow_tbl.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
+    elems.append(flow_tbl)
+    elems.append(Spacer(1, 6*mm))
+    elems.append(HRFlowable(width='100%', thickness=0.5, color=LGRAY))
+    elems.append(Spacer(1, 5*mm))
+
+    # ── 2カラムレイアウト（入力方法 | 再申請・注意） ──
+    def section_title(text):
+        return Paragraph(text, ps('sh', 9, GRAY))
+
+    def body(text):
+        return Paragraph(text, ps('bd', 8, BLACK, leading=13))
+
+    def step_row(num, title, desc):
+        num_cell  = Paragraph(num,   ps('n',  9, ACCENT, align=1))
+        text_cell = Paragraph(f'<b>{title}</b><br/>{desc}',
+                              ParagraphStyle('sc', fontName=F, fontSize=8,
+                                            textColor=BLACK, leading=12))
+        t = Table([[num_cell, text_cell]], colWidths=[7*mm, 73*mm])
+        t.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'),
+                                ('TOPPADDING', (0,0), (-1,-1), 1),
+                                ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+        return t
+
+    # 左カラム：フォーム入力方法
+    left = [
+        section_title('フォームの入力方法'),
+        Spacer(1, 2*mm),
+        step_row('①', '名前を選ぶ', 'リストから自分の名前を選ぶ'),
+        Spacer(1, 1*mm),
+        step_row('②', 'シフトにチェック',
+                 '早番（10〜15時）\n遅番（15〜19時）\n両方入れる日は両方チェック'),
+        Spacer(1, 1*mm),
+        step_row('③', '送信する', '一番下の「送信」ボタンを押して完了'),
     ]
-    for title, body in steps:
-        elems.append(Paragraph(title, s('st', 9, color=BLACK)))
-        elems.append(Paragraph(body,  s('sb', 8, color=GRAY, leading=13)))
-        elems.append(Spacer(1, 3*mm))
 
-    elems.append(HRFlowable(width='100%', thickness=0.5, color=LIGHT))
-    elems.append(Spacer(1, 4*mm))
+    # 右カラム：再申請・締め切り・問い合わせ
+    right = [
+        section_title('再申請を求められたとき'),
+        Spacer(1, 2*mm),
+        body('再申請は「上書き」ではなく「追加」です。\n最初の申請内容はそのまま残るので、'
+             '新たに入れる日だけチェックして送信してください。'),
+        Spacer(1, 4*mm),
+        section_title('締め切り'),
+        Spacer(1, 2*mm),
+        body('フォームの説明文に記載されています。\n届いてから約10日以内を目安に回答してください。'),
+        Spacer(1, 4*mm),
+        section_title('困ったときは'),
+        Spacer(1, 2*mm),
+        body('吉田さんに連絡してください。'),
+    ]
 
-    # 再申請
-    elems.append(Paragraph('再申請を求められたとき', s('h3', 10, color=GRAY)))
-    elems.append(Spacer(1, 2*mm))
-    elems.append(Paragraph(
-        '再申請は「上書き」ではなく「追加」になります。最初に申請した内容はそのまま残るので、新たに入れる日だけチェックして送信してください。',
-        s('rb', 8, color=BLACK, leading=14)))
-    elems.append(Spacer(1, 6*mm))
+    def build_col(items):
+        from reportlab.platypus import KeepTogether
+        tbl_data = [[item] for item in items]
+        t = Table(tbl_data, colWidths=[83*mm])
+        t.setStyle(TableStyle([
+            ('VALIGN',        (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING',   (0,0), (-1,-1), 0),
+            ('RIGHTPADDING',  (0,0), (-1,-1), 0),
+            ('TOPPADDING',    (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ]))
+        return t
 
-    # 問い合わせ
-    elems.append(HRFlowable(width='100%', thickness=0.5, color=LIGHT))
-    elems.append(Spacer(1, 4*mm))
-    elems.append(Paragraph('困ったときは吉田さんに連絡してください。', s('q', 8, color=GRAY, align=1)))
+    divider = Table([['']], colWidths=[0.5*mm], rowHeights=[60*mm])
+    divider.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,-1), LGRAY)]))
+
+    two_col = Table(
+        [[build_col(left), divider, build_col(right)]],
+        colWidths=[83*mm, 6*mm, 83*mm]
+    )
+    two_col.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
+    elems.append(two_col)
 
     doc.build(elems)
     return buf.getvalue()
