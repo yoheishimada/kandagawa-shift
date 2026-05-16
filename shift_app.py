@@ -64,9 +64,9 @@ h2 {
     border: none !important;
     border-radius: 6px !important;
     font-weight: 500 !important;
-    font-size: 0.72rem !important;
+    font-size: 0.62rem !important;
     letter-spacing: 0.06em !important;
-    padding: 0.3rem 1rem !important;
+    padding: 0.2rem 0.7rem !important;
     transition: opacity 0.2s ease !important;
 }
 .stButton > button:hover {
