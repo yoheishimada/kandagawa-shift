@@ -148,7 +148,7 @@ def get_lineworks_token():
                 "assertion": jwt_token,
                 "client_id": client_id,
                 "client_secret": client_secret,
-                "scope": "bot",
+                "scope": "bot user",
             },
             timeout=10,
         )
