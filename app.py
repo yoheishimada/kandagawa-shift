@@ -686,9 +686,20 @@ def build_sales_map(records):
 
 def compute_lag_features(dt_str, sales_map):
     """予測対象日のラグ特徴量を過去実績から計算する。
+    7/28日ラグは同曜日優先ルックアップ：データ境界外でも正しい曜日の値を取得。
     成長・衰退どちらのトレンドも yoy_ratio / momentum に自然に反映される。"""
+    base_wd = date.fromisoformat(dt_str).weekday()
+
     def lookup_near(offset_days, window=3):
         target = date.fromisoformat(dt_str) - timedelta(days=offset_days)
+        # 7/28日ラグは同曜日を最優先（異曜日の値はトレンドを歪める）
+        if offset_days % 7 == 0:
+            # ① ちょうど同曜日の日を最大6週遡る
+            for extra_weeks in range(7):
+                cand = (target - timedelta(weeks=extra_weeks))
+                if cand.isoformat() in sales_map and cand.weekday() == base_wd:
+                    return sales_map[cand.isoformat()]
+        # ② 同曜日が見つからない場合はwindow日以内の近傍で妥協
         for delta in range(window + 1):
             for sign in [0, 1, -1]:
                 cand = (target + timedelta(days=delta * sign)).isoformat()

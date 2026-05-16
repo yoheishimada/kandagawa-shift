@@ -311,11 +311,17 @@ def build_dataset():
     sales_map = dict(zip(dates_sorted, [daily_sales[d] for d in dates_sorted]))
 
     def lookup_sales_near(dt_str, offset_days, window=3):
-        """offset_days前後window日以内で最も近い営業日の売上を返す"""
+        """offset_days前後window日以内で最も近い営業日の売上を返す。
+        7/28日ラグは同曜日フォールバックあり。"""
         target = date.fromisoformat(dt_str) - timedelta(days=offset_days)
         for delta in range(window + 1):
             for sign in [0, 1, -1]:
                 cand = (target + timedelta(days=delta * sign)).isoformat()
+                if cand in sales_map:
+                    return sales_map[cand]
+        if offset_days % 7 == 0:
+            for extra_weeks in range(1, 5):
+                cand = (target - timedelta(weeks=extra_weeks)).isoformat()
                 if cand in sales_map:
                     return sales_map[cand]
         return None
