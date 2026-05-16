@@ -95,7 +95,24 @@ def load_data():
     relevant_data = [row[last_name_idx:] for row in values[1:]]
     df = pd.DataFrame(relevant_data, columns=relevant_headers)
     df = df[df['お名前'] != '']  # 名前が空の行を除外
-    df = df.drop_duplicates(subset=['お名前'], keep='last')  # 再申請時は最新を使用
+    # 同一スタッフの複数回答をマージ（どちらかの回答で〇なら〇）
+    date_cols = [c for c in df.columns if 'シフト希望' in c]
+    merged_rows = []
+    for name, group in df.groupby('お名前', sort=False):
+        row = {'お名前': name}
+        for col in date_cols:
+            has_early = any('早番' in str(v) for v in group[col])
+            has_late = any('遅番' in str(v) for v in group[col])
+            if has_early and has_late:
+                row[col] = '早番,遅番'
+            elif has_early:
+                row[col] = '早番'
+            elif has_late:
+                row[col] = '遅番'
+            else:
+                row[col] = ''
+        merged_rows.append(row)
+    df = pd.DataFrame(merged_rows, columns=['お名前'] + date_cols)
     return df if not df.empty else None
 
 @st.cache_data(ttl=300)
