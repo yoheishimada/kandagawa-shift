@@ -443,6 +443,8 @@ def generate_shift_pdf(daily_shifts, year, month, staff_colors=None):
 
     def hex_to_color(h):
         h = h.lstrip('#')
+        if len(h) == 3:
+            h = h[0]*2 + h[1]*2 + h[2]*2
         return colors.Color(int(h[0:2],16)/255, int(h[2:4],16)/255, int(h[4:6],16)/255)
 
     title_style = ParagraphStyle('title', fontName='HeiseiKakuGo-W5', fontSize=11,
