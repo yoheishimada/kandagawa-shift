@@ -649,7 +649,7 @@ else:
     <div style='font-size:0.75rem;color:#bbb;margin-top:6px;'>{filled_slots} / {total_slots} 枠</div>
   </div>
   <div style='flex:1;min-width:140px;background:#fff;border-radius:8px;padding:20px 24px;border:1px solid #e8e4de;'>
-    <div style='font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;margin-bottom:8px;'>人手不足の日</div>
+    <div style='font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;margin-bottom:8px;'>シフト希望なしの日</div>
     <div style='font-size:2rem;font-weight:700;color:{shortage_color};line-height:1;'>{shortage_days}<span style='font-size:1rem;font-weight:400;color:#888;margin-left:4px;'>日</span></div>
     <div style='font-size:0.75rem;color:#bbb;margin-top:6px;'>早番または遅番が0名</div>
   </div>
@@ -679,7 +679,7 @@ else:
 
     if is_admin:
         st.markdown('---')
-        st.subheader('人手不足')
+        st.subheader('シフト希望なし')
         shortage_rows = []
         _, days_in_month = calendar.monthrange(year, month)
         day_names_list = ['月', '火', '水', '木', '金', '土', '日']
