@@ -1099,9 +1099,9 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
     total_range = max(bull_val - bear_val, 1)
     fill_pct = min(100, (cur_val - bear_val) / total_range * 100)
 
-    bread_val = r["bread_sales"]
-    sand_val  = r["sandwich_sales"]
-    sec_val   = r["secondary_sales"]
+    bread_val  = r["bread_sales"]
+    sand_val   = r["sandwich_sales"]
+    rebake_val = r["rebake_sales"]
 
     card_html = f"""
     <div class="day-card">
@@ -1109,7 +1109,7 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
         <div class="weekday" style="color:{wd_color}">{r['weekday']}</div>
         <div class="sales-amount">¥{cur_val:,}</div>
         <div style="font-size:0.68rem;color:#bbb;margin:0.08rem 0 0.18rem;letter-spacing:0.01em">
-            パン ¥{bread_val:,} ／ サンド ¥{sand_val:,} ／ 二次 ¥{sec_val:,}
+            パン ¥{bread_val:,} ／ サンド ¥{sand_val:,} ／ リベイク ¥{rebake_val:,}
         </div>
         <div style="margin:0.2rem 0">{''.join(badges)}</div>
         <div class="weather-info">{temp_txt} {rain_txt}</div>
