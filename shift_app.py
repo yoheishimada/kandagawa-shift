@@ -117,6 +117,9 @@ h2 {
     fill: #1a1a1a !important;
 }
 
+/* multipage ナビ非表示 */
+[data-testid="stSidebarNav"] { display: none !important; }
+
 /* セパレーター */
 hr { border-color: #e8e4de !important; }
 
@@ -171,12 +174,7 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.rerun()
     st.markdown('---')
-    with st.expander('使い方マニュアル'):
-        try:
-            with open('管理者マニュアル.md', 'r', encoding='utf-8') as f:
-                st.markdown(f.read())
-        except:
-            st.write('マニュアルを読み込めませんでした。')
+    st.markdown("<a href='/manual' target='_blank' style='color:#1a1a1a;font-size:0.85rem;'>使い方マニュアル</a>", unsafe_allow_html=True)
 
 @st.cache_data(ttl=300)
 def load_data():
