@@ -5,6 +5,7 @@
 import csv
 import json
 import os
+import pickle
 from collections import defaultdict
 from datetime import date, timedelta
 
@@ -304,6 +305,15 @@ def build_dataset():
             else:
                 prev_close_map[dt_str] = DEFAULT_CLOSE
 
+    # 需要補正データを読み込む（早期売切による打ち切りデータの補正）
+    corrections_path = os.path.join(DATA_DIR, "demand_corrections.pkl")
+    if os.path.exists(corrections_path):
+        with open(corrections_path, "rb") as f:
+            demand_corrections = pickle.load(f)
+        print(f"需要補正データ読み込み: {len(demand_corrections)}件")
+    else:
+        demand_corrections = {}
+
     print("データセットを結合中...")
     records = []
     for dt_str in dates_sorted:
@@ -346,7 +356,9 @@ def build_dataset():
         }
 
         for product, qty in daily_products[dt_str].items():
-            record[f"qty_{product}"] = qty
+            # 早期売切日は補正済み需要量を使用（実売数は打ち切られているため）
+            corrected = demand_corrections.get((dt_str, product))
+            record[f"qty_{product}"] = corrected if corrected and corrected > qty else qty
 
         records.append(record)
 
