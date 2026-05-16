@@ -62,11 +62,11 @@ h2 {
     background-color: #1a1a1a !important;
     color: #ffffff !important;
     border: none !important;
-    border-radius: 0px !important;
+    border-radius: 20px !important;
     font-weight: 500 !important;
-    font-size: 0.75rem !important;
-    letter-spacing: 0.08em !important;
-    padding: 0.4rem 1.2rem !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0.06em !important;
+    padding: 0.3rem 1rem !important;
     transition: opacity 0.2s ease !important;
 }
 .stButton > button:hover {
@@ -777,7 +777,7 @@ else:
                 default=all_staff,
             )
             lw_message = st.text_area('送信メッセージ（編集可）', default_msg, height=180)
-            col_btn1, col_btn2 = st.columns([1, 1])
+            _, col_btn1, col_btn2, _ = st.columns([0.4, 1.2, 1.2, 2])
             with col_btn1:
                 if st.button(f'選択した{len(selected_staff)}名に送信'):
                     if not selected_staff:
