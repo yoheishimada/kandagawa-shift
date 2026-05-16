@@ -233,10 +233,26 @@ def build_daily_shifts(df):
         daily[date_label] = {'早': early_staff, '遅': late_staff}
     return daily
 
-def render_calendar(daily_shifts, year, month):
+STAFF_COLOR_PALETTE = [
+    ('#FF6B6B', 'white'), ('#4ECDC4', 'white'), ('#45B7D1', 'white'),
+    ('#A29BFE', 'white'), ('#FECA57', '#333'),  ('#FF9FF3', '#333'),
+    ('#54A0FF', 'white'), ('#5F27CD', 'white'), ('#00D2D3', 'white'),
+    ('#FF9F43', 'white'), ('#10AC84', 'white'), ('#EE5A24', 'white'),
+    ('#C4E538', '#333'),  ('#9980FA', 'white'), ('#F368E0', 'white'),
+]
+
+def get_staff_colors(staff_list):
+    return {
+        name: STAFF_COLOR_PALETTE[i % len(STAFF_COLOR_PALETTE)]
+        for i, name in enumerate(staff_list)
+    }
+
+def render_calendar(daily_shifts, year, month, staff_colors=None):
     _, days_in_month = calendar.monthrange(year, month)
     first_weekday = calendar.weekday(year, month, 1)
     day_names = ['月', '火', '水', '木', '金', '土', '日']
+    if staff_colors is None:
+        staff_colors = {}
 
     html = """
     <style>
@@ -248,11 +264,9 @@ def render_calendar(daily_shifts, year, month):
                 padding: 6px 4px; min-height: 100px; }
     .cal-empty { background: #f0f0f0; }
     .cal-date { font-weight: bold; font-size: 15px; margin-bottom: 4px; color: #333; }
-    .cal-label { font-size: 10px; color: #888; margin-top: 4px; }
-    .cal-name-early { background: #d4edda; color: #155724; border-radius: 3px;
-                      padding: 2px 5px; margin: 2px 0; font-size: 11px; display: block; }
-    .cal-name-late  { background: #cce5ff; color: #004085; border-radius: 3px;
-                      padding: 2px 5px; margin: 2px 0; font-size: 11px; display: block; }
+    .cal-section { font-size: 10px; color: #888; margin-top: 4px; border-top: 1px solid #eee; padding-top: 2px; }
+    .cal-name { border-radius: 3px; padding: 2px 5px; margin: 2px 0;
+                font-size: 11px; display: block; font-weight: bold; }
     .cal-none { color: #bbb; font-size: 11px; }
     </style>
     <div class='cal-wrap'>
@@ -282,13 +296,15 @@ def render_calendar(daily_shifts, year, month):
                 html += f"<div class='cal-date'>{day}</div>"
 
                 if early:
-                    html += "<div class='cal-label'>早番</div>"
+                    html += "<div class='cal-section'>🌅 早番</div>"
                     for n in early:
-                        html += f"<span class='cal-name-early'>{n}</span>"
+                        bg, fg = staff_colors.get(n, ('#d4edda', '#155724'))
+                        html += f"<span class='cal-name' style='background:{bg};color:{fg}'>{n}</span>"
                 if late:
-                    html += "<div class='cal-label'>遅番</div>"
+                    html += "<div class='cal-section'>🌆 遅番</div>"
                     for n in late:
-                        html += f"<span class='cal-name-late'>{n}</span>"
+                        bg, fg = staff_colors.get(n, ('#cce5ff', '#004085'))
+                        html += f"<span class='cal-name' style='background:{bg};color:{fg}'>{n}</span>"
                 if not early and not late:
                     html += "<div class='cal-none'>ー</div>"
 
@@ -419,14 +435,19 @@ else:
     if not_submitted:
         st.warning('📋 未提出のスタッフ：' + '　'.join(not_submitted))
 
-    col1, col2 = st.columns(2)
-    col1.success('■ 早番（10〜15時）')
-    col2.info('■ 遅番（15〜19時）')
-
     daily_shifts = build_daily_shifts(df)
+    staff_colors = get_staff_colors(all_staff)
 
+    # 凡例
     st.subheader(f'{year}年{month}月 シフト表')
-    st.markdown(render_calendar(daily_shifts, year, month), unsafe_allow_html=True)
+    legend_html = "<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;'>"
+    for name in all_staff:
+        bg, fg = staff_colors.get(name, ('#eee', '#333'))
+        legend_html += f"<span style='background:{bg};color:{fg};border-radius:4px;padding:2px 8px;font-size:12px;font-weight:bold'>{name}</span>"
+    legend_html += "</div>"
+    st.markdown(legend_html, unsafe_allow_html=True)
+
+    st.markdown(render_calendar(daily_shifts, year, month, staff_colors), unsafe_allow_html=True)
 
     if is_admin:
         st.markdown('---')
