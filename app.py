@@ -993,7 +993,7 @@ with st.sidebar:
     st.divider()
     st.markdown("### 🍞 ラインナップ")
     lineup = get_lineup(models)
-    st.caption("スプレッドシート商品構成（固定）")
+    st.caption(f"基準日: {date.today().isoformat()}")
     st.caption(f"{len(lineup)} 商品")
 
     st.divider()
