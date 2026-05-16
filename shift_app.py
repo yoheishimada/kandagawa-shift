@@ -171,7 +171,7 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.rerun()
     st.markdown('---')
-    with st.expander('管理者マニュアルを見る'):
+    with st.expander('使い方マニュアル'):
         try:
             with open('管理者マニュアル.md', 'r', encoding='utf-8') as f:
                 st.markdown(f.read())
