@@ -131,6 +131,15 @@ hr { border-color: #e8e4de !important; }
 </style>
 """, unsafe_allow_html=True)
 
+# --- マニュアル直接表示（認証不要）---
+if st.query_params.get('view') == 'manual':
+    try:
+        with open('管理者マニュアル.md', 'r', encoding='utf-8') as f:
+            st.markdown(f.read())
+    except:
+        st.error('マニュアルを読み込めませんでした。')
+    st.stop()
+
 # --- パスワード保護 ---
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
@@ -174,7 +183,7 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.rerun()
     st.markdown('---')
-    st.markdown("<a href='/manual' target='_blank' style='color:#1a1a1a;font-size:0.85rem;'>使い方マニュアル</a>", unsafe_allow_html=True)
+    st.markdown("<a href='?view=manual' target='_blank' style='color:#1a1a1a;font-size:0.85rem;'>使い方マニュアル</a>", unsafe_allow_html=True)
 
 @st.cache_data(ttl=300)
 def load_data():
