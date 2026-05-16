@@ -104,6 +104,19 @@ h2 {
 .cal-name { font-size: 10px !important; border-radius: 0px !important; }
 .cal-none { color: #ccc !important; }
 
+/* multiselect タグ：白抜き */
+[data-baseweb="tag"] {
+    background-color: #ffffff !important;
+    border: 1px solid #1a1a1a !important;
+    border-radius: 4px !important;
+}
+[data-baseweb="tag"] span {
+    color: #1a1a1a !important;
+}
+[data-baseweb="tag"] [role="presentation"] svg {
+    fill: #1a1a1a !important;
+}
+
 /* セパレーター */
 hr { border-color: #e8e4de !important; }
 
