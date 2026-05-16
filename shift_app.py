@@ -687,11 +687,16 @@ else:
                 default=all_staff,
             )
             lw_message = st.text_area('送信メッセージ（編集可）', default_msg, height=180)
-            if st.button(f'📨 選択した{len(selected_staff)}名に送信'):
-                if not selected_staff:
-                    st.warning('送信先を選択してください')
-                else:
-                    do_lw_send(selected_staff, lw_message)
+            col_btn1, col_btn2 = st.columns([1, 1])
+            with col_btn1:
+                if st.button(f'📨 選択した{len(selected_staff)}名に送信'):
+                    if not selected_staff:
+                        st.warning('送信先を選択してください')
+                    else:
+                        do_lw_send(selected_staff, lw_message)
+            with col_btn2:
+                if st.button('📨 全スタッフに一斉送信'):
+                    do_lw_send(all_staff, lw_message)
 
             st.markdown('---')
 
