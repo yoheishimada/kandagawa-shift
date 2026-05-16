@@ -431,25 +431,48 @@ def build_admin_ranking(df, date_cols):
     rank_df = pd.DataFrame(stats).T.sort_values('合計日数', ascending=False).astype(int)
     return rank_df
 
-def generate_shift_pdf(daily_shifts, year, month):
+def generate_shift_pdf(daily_shifts, year, month, staff_colors=None):
+    if staff_colors is None:
+        staff_colors = {}
+
     pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=landscape(A4),
-                            leftMargin=10*mm, rightMargin=10*mm,
-                            topMargin=10*mm, bottomMargin=10*mm)
+                            leftMargin=12*mm, rightMargin=12*mm,
+                            topMargin=10*mm, bottomMargin=8*mm)
 
-    styles = getSampleStyleSheet()
-    jp = ParagraphStyle('jp', fontName='HeiseiKakuGo-W5', fontSize=8, leading=11)
-    jp_small = ParagraphStyle('jp_small', fontName='HeiseiKakuGo-W5', fontSize=7, leading=10, textColor=colors.HexColor('#555555'))
-    title_style = ParagraphStyle('title', fontName='HeiseiKakuGo-W5', fontSize=14, leading=18)
+    def hex_to_color(h):
+        h = h.lstrip('#')
+        return colors.Color(int(h[0:2],16)/255, int(h[2:4],16)/255, int(h[4:6],16)/255)
 
-    day_names = ['月', '火', '水', '木', '金', '土', '日']
+    title_style = ParagraphStyle('title', fontName='HeiseiKakuGo-W5', fontSize=11,
+                                 leading=16, textColor=colors.HexColor('#1a1a1a'))
+    label_style = ParagraphStyle('label', fontName='HeiseiKakuGo-W5', fontSize=6,
+                                 leading=8, textColor=colors.HexColor('#999999'))
+    date_style  = ParagraphStyle('date',  fontName='HeiseiKakuGo-W5', fontSize=10,
+                                 leading=13, textColor=colors.HexColor('#1a1a1a'))
+    header_style = ParagraphStyle('hdr',  fontName='HeiseiKakuGo-W5', fontSize=9,
+                                  leading=12, textColor=colors.white, alignment=1)
+
+    def name_para(name):
+        bg_hex, fg = staff_colors.get(name, ('#e0e0e0', '#333333'))
+        fg_hex = '#ffffff' if fg == 'white' else fg
+        style = ParagraphStyle(
+            f'n_{name}', fontName='HeiseiKakuGo-W5', fontSize=7, leading=10,
+            textColor=hex_to_color(fg_hex),
+            backColor=hex_to_color(bg_hex),
+            leftPadding=3, rightPadding=3, topPadding=1, bottomPadding=1,
+            spaceAfter=1,
+        )
+        return Paragraph(name, style)
+
+    day_names   = ['月', '火', '水', '木', '金', '土', '日']
     _, days_in_month = calendar.monthrange(year, month)
     first_weekday = calendar.weekday(year, month, 1)
 
-    # カレンダーテーブルデータ作成
-    header = [Paragraph(d, jp) for d in day_names]
-    table_data = [header]
+    # ヘッダー行
+    header_row = [Paragraph(d, header_style) for d in day_names]
+    table_data = [header_row]
 
     day = 1
     for week in range(6):
@@ -463,35 +486,45 @@ def generate_shift_pdf(daily_shifts, year, month):
                 wname = day_names[calendar.weekday(year, month, day)]
                 date_label = f'{month}月{day}日（{wname}）'
                 shifts = daily_shifts.get(date_label, {'早': [], '遅': []})
-                cell_text = f'<b>{day}</b><br/>'
+
+                cell_items = [Paragraph(f'<b>{day}</b>', date_style)]
                 if shifts['早']:
-                    cell_text += '<font color="#155724">早番</font><br/>' + '<br/>'.join(shifts['早']) + '<br/>'
+                    cell_items.append(Paragraph('早番', label_style))
+                    for n in shifts['早']:
+                        cell_items.append(name_para(n))
                 if shifts['遅']:
-                    cell_text += '<font color="#004085">遅番</font><br/>' + '<br/>'.join(shifts['遅'])
-                row.append(Paragraph(cell_text, jp))
+                    cell_items.append(Spacer(1, 2))
+                    cell_items.append(Paragraph('遅番', label_style))
+                    for n in shifts['遅']:
+                        cell_items.append(name_para(n))
+
+                row.append(cell_items)
                 day += 1
         table_data.append(row)
 
-    col_width = (landscape(A4)[0] - 20*mm) / 7
-    row_height = (landscape(A4)[1] - 30*mm) / (len(table_data))
+    col_width  = (landscape(A4)[0] - 24*mm) / 7
+    row_height = (landscape(A4)[1] - 28*mm) / (len(table_data))
 
-    t = Table(table_data, colWidths=[col_width]*7, rowHeights=[10*mm] + [row_height]*(len(table_data)-1))
-    t.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (-1, -1), 'HeiseiKakuGo-W5'),
-        ('FONTSIZE', (0, 0), (-1, 0), 9),
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3d3d7a')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cccccc')),
-        ('BACKGROUND', (5, 1), (5, -1), colors.HexColor('#fff0f0')),
-        ('BACKGROUND', (6, 1), (6, -1), colors.HexColor('#f0f0ff')),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('LEFTPADDING', (0, 0), (-1, -1), 3),
-    ]))
+    t = Table(table_data, colWidths=[col_width]*7,
+              rowHeights=[8*mm] + [row_height]*(len(table_data)-1))
+
+    ts = TableStyle([
+        ('FONTNAME',    (0,0), (-1,-1), 'HeiseiKakuGo-W5'),
+        ('BACKGROUND',  (0,0), (-1,0),  colors.HexColor('#1a1a1a')),
+        ('TEXTCOLOR',   (0,0), (-1,0),  colors.white),
+        ('ALIGN',       (0,0), (-1,0),  'CENTER'),
+        ('VALIGN',      (0,0), (-1,-1), 'TOP'),
+        ('GRID',        (0,0), (-1,-1), 0.3, colors.HexColor('#e0dbd4')),
+        ('BACKGROUND',  (5,1), (5,-1),  colors.HexColor('#fdf5f5')),
+        ('BACKGROUND',  (6,1), (6,-1),  colors.HexColor('#f5f5fd')),
+        ('TOPPADDING',  (0,0), (-1,-1), 4),
+        ('LEFTPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING',(0,0),(-1,-1), 4),
+    ])
+    t.setStyle(ts)
 
     elements = [
-        Paragraph(f'{year}年{month}月 シフト表　神田川ベーカリー', title_style),
+        Paragraph(f'神田川ベーカリー　{year}年{month}月 シフト表', title_style),
         Spacer(1, 4*mm),
         t,
     ]
@@ -685,7 +718,7 @@ else:
 
         st.markdown('---')
         st.subheader('シフト表PDFダウンロード')
-        pdf_bytes = generate_shift_pdf(daily_shifts, year, month)
+        pdf_bytes = generate_shift_pdf(daily_shifts, year, month, staff_colors)
         st.download_button(
             label=f'{year}年{month}月 シフト表をPDFでダウンロード',
             data=pdf_bytes,
