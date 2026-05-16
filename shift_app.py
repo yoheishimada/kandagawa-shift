@@ -21,7 +21,7 @@ SPREADSHEET_ID = '1sVh4_9vbkucCRSenosYISpw_mFSsUioPLs0zBfxNT0U'
 APP_PASSWORD = 'Kandagawa0222'
 ADMIN_PASSWORD = '0222'
 
-st.set_page_config(page_title='神田川ベーカリー シフト表', layout='wide')
+st.set_page_config(page_title='神田川ベーカリー シフト申請・調整アプリ', layout='wide')
 
 st.markdown("""
 <style>
@@ -121,7 +121,7 @@ if not st.session_state.authenticated:
     st.markdown("""
     <div style='padding: 2rem 0 1.5rem 0; border-bottom: 1px solid #e8e4de; margin-bottom: 1.5rem;'>
       <div style='font-size:0.65rem;letter-spacing:0.3em;color:#aaa;text-transform:uppercase;margin-bottom:0.6rem;'>Kandagawa Bakery</div>
-      <div style='font-size:1.6rem;font-weight:600;letter-spacing:0.02em;color:#1a1a1a;line-height:1;'>シフト表</div>
+      <div style='font-size:1.6rem;font-weight:600;letter-spacing:0.02em;color:#1a1a1a;line-height:1;'>シフト申請・調整アプリ</div>
     </div>
     """, unsafe_allow_html=True)
     col, _ = st.columns([1, 2])
