@@ -653,15 +653,7 @@ else:
 </div>
 """, unsafe_allow_html=True)
 
-    # 凡例
     st.subheader(f'{year}年{month}月 シフト表')
-    legend_html = "<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;'>"
-    for name in all_staff:
-        bg, fg = staff_colors.get(name, ('#eee', '#333'))
-        legend_html += f"<span style='background:{bg};color:{fg};border-radius:4px;padding:2px 8px;font-size:12px;font-weight:bold'>{name}</span>"
-    legend_html += "</div>"
-    st.markdown(legend_html, unsafe_allow_html=True)
-
     st.markdown(render_calendar(daily_shifts, year, month, staff_colors), unsafe_allow_html=True)
 
     if is_admin:
