@@ -391,12 +391,12 @@ def render_calendar(daily_shifts, year, month, staff_colors=None):
                 html += f"<div class='cal-date'>{day}</div>"
 
                 if early:
-                    html += "<div class='cal-section'>🌅 早番</div>"
+                    html += "<div class='cal-section'>早番</div>"
                     for n in early:
                         bg, fg = staff_colors.get(n, ('#d4edda', '#155724'))
                         html += f"<span class='cal-name' style='background:{bg};color:{fg}'>{n}</span>"
                 if late:
-                    html += "<div class='cal-section'>🌆 遅番</div>"
+                    html += "<div class='cal-section'>遅番</div>"
                     for n in late:
                         bg, fg = staff_colors.get(n, ('#cce5ff', '#004085'))
                         html += f"<span class='cal-name' style='background:{bg};color:{fg}'>{n}</span>"
@@ -528,7 +528,7 @@ else:
     st.caption(f'※5分ごとに自動更新　　{len(df)}名回答済み　／　未提出 {len(not_submitted)}名')
 
     if not_submitted:
-        st.warning('📋 未提出のスタッフ：' + '　'.join(not_submitted))
+        st.warning('未提出のスタッフ：' + '　'.join(not_submitted))
 
     daily_shifts = build_daily_shifts(df)
     staff_colors = get_staff_colors(all_staff)
@@ -546,7 +546,7 @@ else:
 
     if is_admin:
         st.markdown('---')
-        st.subheader('⚠️ 人手不足リスト')
+        st.subheader('人手不足')
         shortage_rows = []
         _, days_in_month = calendar.monthrange(year, month)
         day_names_list = ['月', '火', '水', '木', '金', '土', '日']
@@ -587,7 +587,7 @@ else:
             )
 
             st.markdown('---')
-            st.subheader('📨 LINE WORKSメッセージ送信')
+            st.subheader('LINE WORKSメッセージ送信')
 
             shortage_lines = '\n'.join(
                 f"・{r['日付']}　{r['シフト']}" for r in shortage_rows
@@ -635,11 +635,11 @@ else:
                     else:
                         failed.append(f"{staff_name}（{status}）")
                 if sent:
-                    st.success(f'✅ 送信成功 {len(sent)}名：' + '、'.join(sent))
+                    st.success(f'送信成功 {len(sent)}名：' + '、'.join(sent))
                 if failed:
                     st.error(f'❌ 送信失敗 {len(failed)}名：' + '、'.join(failed))
                 if unmatched:
-                    st.warning(f'⚠️ アカウントが見つからなかったスタッフ：' + '、'.join(unmatched))
+                    st.warning(f'アカウントが見つからなかったスタッフ：' + '、'.join(unmatched))
 
             # ① 複数人への一斉送信
             st.markdown('**① 選択したスタッフに一斉送信**')
@@ -651,13 +651,13 @@ else:
             lw_message = st.text_area('送信メッセージ（編集可）', default_msg, height=180)
             col_btn1, col_btn2 = st.columns([1, 1])
             with col_btn1:
-                if st.button(f'📨 選択した{len(selected_staff)}名に送信'):
+                if st.button(f'選択した{len(selected_staff)}名に送信'):
                     if not selected_staff:
                         st.warning('送信先を選択してください')
                     else:
                         do_lw_send(selected_staff, lw_message)
             with col_btn2:
-                if st.button('📨 全スタッフに一斉送信'):
+                if st.button('全スタッフに一斉送信'):
                     do_lw_send(all_staff, lw_message)
 
             st.markdown('---')
@@ -666,7 +666,7 @@ else:
             st.markdown('**② 個人への個別メッセージ**')
             target_person = st.selectbox('送信相手', options=all_staff)
             personal_msg = st.text_area('メッセージを入力', height=120, key='personal_msg')
-            if st.button('📩 個別送信'):
+            if st.button('個別送信'):
                 if not personal_msg.strip():
                     st.warning('メッセージを入力してください')
                 else:
@@ -675,7 +675,7 @@ else:
             st.success('全日程・全シフトに1名以上入っています！')
 
         st.markdown('---')
-        st.subheader('📄 シフト表PDFダウンロード')
+        st.subheader('シフト表PDFダウンロード')
         pdf_bytes = generate_shift_pdf(daily_shifts, year, month)
         st.download_button(
             label=f'{year}年{month}月 シフト表をPDFでダウンロード',
@@ -685,10 +685,10 @@ else:
         )
 
         st.markdown('---')
-        st.subheader('👑 管理者ビュー：スタッフ出勤ランキング')
+        st.subheader('スタッフ出勤ランキング')
         st.caption('合計出勤日数が多いスタッフほど上位。シフト競合時の優先順位の参考に。')
         rank_df = build_admin_ranking(df, date_cols)
-        medals = ['🥇', '🥈', '🥉']
+        medals = ['1位', '2位', '3位']
         for i, (name, row) in enumerate(rank_df.iterrows()):
             medal = medals[i] if i < 3 else f'{i+1}位'
             total = row['合計日数']
@@ -701,6 +701,6 @@ else:
             col_d.write(f'遅番 {row["遅番日数"]}日')
             col_e.progress(float(pct), text=f'合計 {total}日')
 
-if st.button('🔄 データを再読み込み'):
+if st.button('データを再読み込み'):
     st.cache_data.clear()
     st.rerun()
