@@ -1186,7 +1186,8 @@ def build_product_table(products_list, results, date_cols, key_field="products",
             # 食パン1斤バッジ（2斤に統合済み）
             if any(kin1 in p or p in kin1 for kin1, _ in SHOKUPAN_PAIRS):
                 indicator += ' <span class="tbl-badge tbl-secondary">→2斤</span>'
-            cells = f"<td>{p}{indicator}</td>"
+            p_display = p.replace("1斤", "").strip()
+            cells = f"<td>{p_display}{indicator}</td>"
             for r in results:
                 qty = r[key_field].get(p, 0)
                 if p in SECONDARY_PRODUCTS:
