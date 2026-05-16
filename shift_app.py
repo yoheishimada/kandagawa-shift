@@ -19,7 +19,7 @@ from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 
 SPREADSHEET_ID = '1sVh4_9vbkucCRSenosYISpw_mFSsUioPLs0zBfxNT0U'
 APP_PASSWORD = 'Kandagawa0222'
-ADMIN_PASSWORD = 'Kandagawa0222'
+ADMIN_PASSWORD = 'Kandagawa_bakery_20170222'
 
 st.set_page_config(page_title='神田川ベーカリー シフト表', layout='wide')
 
