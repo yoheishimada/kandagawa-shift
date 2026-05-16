@@ -642,7 +642,16 @@ else:
 """, unsafe_allow_html=True)
 
     if not_submitted:
-        st.warning('未提出のスタッフ：' + '　'.join(not_submitted))
+        badges = ''.join(
+            f"<span style='background:{staff_colors.get(n, ('#e0e0e0','#333'))[0]};color:{staff_colors.get(n, ('#e0e0e0','#333'))[1]};border-radius:4px;padding:3px 10px;font-size:12px;font-weight:bold;white-space:nowrap;'>{n}</span>"
+            for n in not_submitted
+        )
+        st.markdown(f"""
+<div style='background:#fff;border:1px solid #e8e4de;border-radius:8px;padding:16px 20px;margin-bottom:1rem;'>
+  <div style='font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;margin-bottom:10px;'>未提出のスタッフ</div>
+  <div style='display:flex;flex-wrap:wrap;gap:6px;'>{badges}</div>
+</div>
+""", unsafe_allow_html=True)
 
     # 凡例
     st.subheader(f'{year}年{month}月 シフト表')
