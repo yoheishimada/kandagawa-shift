@@ -23,17 +23,9 @@ def check_password():
         st.session_state.authenticated = False
     if not st.session_state.authenticated:
         st.markdown("""
-        <style>
-        .stApp { background: #f7f4f0; }
-        .login-box { max-width: 360px; margin: 80px auto; padding: 2rem;
-                     background: #fff; border-radius: 16px;
-                     box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
-        .login-title { font-size: 1.8rem; font-weight: 700; color: #3d2b1f; margin-bottom: 0.3rem; }
-        .login-sub { color: #9a8070; font-size: 0.95rem; margin-bottom: 1.5rem; }
-        </style>
-        <div class="login-box">
-          <div class="login-title">🍞 神田川ベーカリー</div>
-          <div class="login-sub">売上予測 & 製造数プランナー</div>
+        <div style='padding: 2.5rem 0 1.5rem 0; border-bottom: 1px solid #e8e4de; margin-bottom: 1.8rem;'>
+          <div style='font-size:0.62rem;letter-spacing:0.28em;color:#bbb;text-transform:uppercase;margin-bottom:0.5rem;'>Kandagawa Bakery</div>
+          <div style='font-size:1.7rem;font-weight:700;letter-spacing:-0.02em;color:#1a1a1a;line-height:1.1;'>売上予測 & 製造数プランナー</div>
         </div>
         """, unsafe_allow_html=True)
         password = st.text_input("パスワードを入力してください", type="password")
@@ -50,141 +42,127 @@ check_password()
 # ── カスタムCSS ──────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
 
-html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; font-size: 16px; }
+html, body, [class*="css"] {
+    font-family: 'Inter', 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+}
 
-/* 背景・文字 */
-.stApp { background: #f7f4f0; color: #2c2520; }
+/* ── 背景 ── */
+.stApp { background: #f5f5f3; color: #1a1a1a; }
 
-/* サイドバー */
+/* ── サイドバー ── */
 [data-testid="stSidebar"] {
-    background: #ffffff;
-    border-right: 2px solid #e8e0d8;
-    color: #2c2520 !important;
+    background: #ffffff !important;
+    border-right: 1px solid #e8e4de !important;
 }
-[data-testid="stSidebar"] * {
-    color: #2c2520 !important;
-}
+[data-testid="stSidebar"] * { color: #1a1a1a !important; }
+[data-testid="stSidebarNav"] { display: none !important; }
 
-/* タイトルエリア */
+/* ── タイトル ── */
 .main-title {
-    font-size: 2.4rem; font-weight: 700; letter-spacing: 0.02em;
-    color: #3d2b1f;
-    margin-bottom: 0.2rem;
+    font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em;
+    color: #1a1a1a; margin-bottom: 0.1rem;
 }
 .main-subtitle {
-    font-size: 1rem; color: #9a8070; letter-spacing: 0.08em;
-    margin-bottom: 2rem;
+    font-size: 0.63rem; font-weight: 600; letter-spacing: 0.22em;
+    text-transform: uppercase; color: #bbb; margin-bottom: 2rem;
 }
 
-/* 日付カード */
+/* ── 日付カード ── */
 .day-card {
-    background: #ffffff; border: 2px solid #e8e0d8; border-radius: 16px;
-    padding: 1.2rem 0.8rem; text-align: center; transition: all 0.2s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    background: #ffffff; border: 1px solid #e8e4de; border-radius: 12px;
+    padding: 1.1rem 0.7rem; text-align: center; transition: all 0.18s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
-.day-card:hover { border-color: #c97b3e; box-shadow: 0 4px 16px rgba(0,0,0,0.12); transform: translateY(-2px); }
-.day-card .date-label {
-    font-size: 0.85rem; color: #9a8070; letter-spacing: 0.06em; margin-bottom: 0.3rem;
-}
-.day-card .weekday { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem; color: #2c2520; }
-.day-card .sales-amount {
-    font-size: 1.4rem; font-weight: 700; color: #c97b3e;
-}
-.day-card .weather-info {
-    font-size: 0.82rem; color: #9a8070; margin-top: 0.5rem;
-}
+.day-card:hover { border-color: #1a1a1a; box-shadow: 0 4px 16px rgba(0,0,0,0.09); transform: translateY(-2px); }
+.day-card .date-label { font-size: 0.68rem; color: #bbb; letter-spacing: 0.08em; margin-bottom: 0.2rem; }
+.day-card .weekday { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.35rem; color: #1a1a1a; }
+.day-card .sales-amount { font-size: 1.35rem; font-weight: 700; color: #1a1a1a; letter-spacing: -0.02em; }
+.day-card .weather-info { font-size: 0.7rem; color: #ccc; margin-top: 0.35rem; }
+
+/* バッジ（日付カード） */
 .day-card .badge {
-    display: inline-block; font-size: 0.72rem; padding: 0.2rem 0.5rem;
-    border-radius: 99px; margin: 0.2rem 0.1rem; font-weight: 600;
+    display: inline-block; font-size: 0.6rem; padding: 0.1rem 0.35rem;
+    border-radius: 4px; margin: 0.12rem 0.04rem; font-weight: 600; letter-spacing: 0.02em;
 }
-.badge-holiday { background: #fff3e0; color: #e65c00; border: 1.5px solid #ffb74d; }
-.badge-school  { background: #e3f2fd; color: #1565c0; border: 1.5px solid #90caf9; }
-.badge-waseda  { background: #f3e5f5; color: #6a1b9a; border: 1.5px solid #ce93d8; }
-.badge-rain    { background: #e8f4fd; color: #1565c0; border: 1.5px solid #90caf9; }
+.badge-holiday { background: #fff3e0; color: #c86000; border: 1px solid #ffd08a; }
+.badge-school  { background: #e8f0fe; color: #1a56db; border: 1px solid #b3c9fa; }
+.badge-waseda  { background: #f0e8fe; color: #6c27c5; border: 1px solid #cdb3fa; }
+.badge-rain    { background: #e8f4fd; color: #1565c0; border: 1px solid #90caf9; }
 
-/* 範囲バー */
-.range-row {
-    display: flex; align-items: center; gap: 0.5rem;
-    font-size: 0.8rem; color: #9a8070; margin-top: 0.6rem;
-}
-.range-track {
-    flex: 1; height: 5px; background: #e8e0d8; border-radius: 99px; position: relative;
-}
-.range-fill {
-    position: absolute; top: 0; height: 5px; border-radius: 99px;
-    background: linear-gradient(90deg, #4a90d9, #f5a742, #e8603d);
-}
+/* レンジバー */
+.range-row { display: flex; align-items: center; gap: 0.35rem; font-size: 0.66rem; color: #ccc; margin-top: 0.5rem; }
+.range-track { flex: 1; height: 3px; background: #ebebeb; border-radius: 99px; position: relative; }
+.range-fill  { position: absolute; top: 0; height: 3px; border-radius: 99px; background: #1a1a1a; }
 
-/* テーブル */
+/* ── テーブル ── */
 .styled-table { width: 100%; border-collapse: collapse; }
 .styled-table th {
-    background: #f0ebe5; color: #6a5a50; font-size: 0.85rem;
-    font-weight: 700; padding: 0.75rem 1rem; text-align: right;
-    border-bottom: 2px solid #e0d8d0; letter-spacing: 0.04em;
+    background: #fafaf8; color: #aaa; font-size: 0.7rem; font-weight: 600;
+    padding: 0.65rem 1rem; text-align: right;
+    border-bottom: 1px solid #e8e4de; letter-spacing: 0.08em; text-transform: uppercase;
 }
 .styled-table th:first-child { text-align: left; }
 .styled-table td {
-    padding: 0.7rem 1rem; font-size: 0.9rem; border-bottom: 1px solid #ede8e2;
-    text-align: right; color: #3a3030;
+    padding: 0.6rem 1rem; font-size: 0.87rem; border-bottom: 1px solid #f2ede8;
+    text-align: right; color: #444;
 }
-.styled-table td:first-child { text-align: left; color: #2c2520; font-weight: 600; }
-.styled-table tr:hover td { background: #faf6f2; }
+.styled-table td:first-child { text-align: left; color: #1a1a1a; font-weight: 500; }
+.styled-table tr:hover td { background: #fafaf8; }
 .styled-table tr.cat-header td {
-    background: #f0ebe5; color: #7a5a40; font-size: 0.8rem; font-weight: 700;
-    letter-spacing: 0.1em; padding: 0.5rem 1rem;
-    border-top: 2px solid #d8cfc5; border-bottom: 1px solid #e0d8d0;
-    text-align: left;
+    background: #f5f5f3; color: #aaa; font-size: 0.66rem; font-weight: 700;
+    letter-spacing: 0.14em; padding: 0.38rem 1rem; text-transform: uppercase;
+    border-top: 1px solid #e8e4de; border-bottom: 1px solid #e8e4de; text-align: left;
 }
-/* 日付カード用バッジ（大きめ） */
-.badge-sellout   { background: #fde8e8; color: #c0392b; border: 1.5px solid #e57373; }
-.badge-loss      { background: #fff8e1; color: #b07000; border: 1.5px solid #ffca28; }
-.badge-secondary { background: #f0f4ff; color: #4a6fa5; border: 1.5px solid #a0b4d8; }
 
-/* 製造数テーブル用インジケーター（コンパクト） */
+/* テーブル内バッジ */
 .tbl-badge {
-    display: inline-block; font-size: 0.6rem; font-weight: 700;
-    padding: 0.05rem 0.3rem; border-radius: 3px; margin-left: 0.35rem;
+    display: inline-block; font-size: 0.57rem; font-weight: 700;
+    padding: 0.04rem 0.25rem; border-radius: 3px; margin-left: 0.28rem;
     vertical-align: middle; letter-spacing: 0.02em; line-height: 1.4;
 }
-.tbl-sellout  { background: #fde8e8; color: #c0392b; border: 1px solid #e57373; }
-.tbl-loss     { background: #fff8e1; color: #966000; border: 1px solid #f0c040; }
-.tbl-secondary{ background: #f0f4ff; color: #4a6fa5; border: 1px solid #b0c4e0; }
+.tbl-sellout   { background: #fde8e8; color: #c0392b; border: 1px solid #e57373; }
+.tbl-loss      { background: #fff8e1; color: #966000; border: 1px solid #f0c040; }
+.tbl-secondary { background: #f0f0f0; color: #888; border: 1px solid #ddd; }
 
-/* セクションヘッダー */
+/* ── セクションヘッダー ── */
 .section-header {
-    font-size: 0.8rem; font-weight: 700; letter-spacing: 0.14em;
-    text-transform: uppercase; color: #9a8070; margin: 2rem 0 1rem;
+    font-size: 0.66rem; font-weight: 700; letter-spacing: 0.2em;
+    text-transform: uppercase; color: #aaa; margin: 2.2rem 0 1rem;
     display: flex; align-items: center; gap: 0.8rem;
 }
-.section-header::after {
-    content: ''; flex: 1; height: 1px; background: #2a2a35;
-}
+.section-header::after { content: ''; flex: 1; height: 1px; background: #e8e4de; }
 
-/* 入力フィールド */
+/* ── 入力フィールド ── */
 .stTextInput input, .stDateInput input {
-    background: #ffffff !important; border: 2px solid #e0d8d0 !important;
-    color: #2c2520 !important; border-radius: 8px !important;
+    background: #ffffff !important; border: 1px solid #e8e4de !important;
+    color: #1a1a1a !important; border-radius: 0px !important; font-size: 0.9rem !important;
 }
 
-/* メトリクスカード */
+/* ── メトリクスカード ── */
 .metric-chip {
-    background: #ffffff; border: 2px solid #e8e0d8; border-radius: 12px;
-    padding: 1rem 1.4rem; margin-bottom: 0.8rem;
+    background: #ffffff; border: 1px solid #e8e4de; border-radius: 10px;
+    padding: 1rem 1.2rem; margin-bottom: 0.8rem;
 }
-.metric-chip .label { font-size: 0.85rem; color: #9a8070; letter-spacing: 0.06em; }
-.metric-chip .value { font-size: 1.6rem; font-weight: 700; color: #c97b3e; }
+.metric-chip .label { font-size: 0.66rem; color: #aaa; letter-spacing: 0.1em; text-transform: uppercase; }
+.metric-chip .value { font-size: 1.5rem; font-weight: 700; color: #1a1a1a; letter-spacing: -0.02em; }
 
-/* ボタン（全体） */
+/* ── ボタン ── */
 .stButton button, .stDownloadButton button {
-    background: #ffffff !important; border: 2px solid #e0d8d0 !important;
-    color: #2c2520 !important; border-radius: 10px !important;
-    font-size: 1rem !important;
+    background: #1a1a1a !important; border: none !important;
+    color: #ffffff !important; border-radius: 6px !important;
+    font-size: 0.82rem !important; font-weight: 500 !important;
+    letter-spacing: 0.04em !important; transition: opacity 0.2s !important;
 }
 .stButton button:hover, .stDownloadButton button:hover {
-    background: #f0ebe5 !important; border-color: #c97b3e !important;
+    opacity: 0.72 !important; background: #1a1a1a !important;
 }
+
+/* ── その他 ── */
+hr { border-color: #e8e4de !important; }
+.stCaption p { color: #bbb !important; font-size: 0.7rem !important; letter-spacing: 0.04em; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -933,8 +911,12 @@ def predict_all_modes(start_date, weather, models, lineup, latest_prices, buffer
 # ── UI ──────────────────────────────────────────────────────
 
 # タイトル
-st.markdown('<div class="main-title">🍞 神田川ベーカリー</div>', unsafe_allow_html=True)
-st.markdown('<div class="main-subtitle">売上予測 & 製造数プランナー</div>', unsafe_allow_html=True)
+st.markdown("""
+<div style='padding: 1.8rem 0 1.4rem 0; border-bottom: 1px solid #e8e4de; margin-bottom: 1.6rem;'>
+  <div style='font-size:0.62rem;letter-spacing:0.28em;color:#bbb;text-transform:uppercase;margin-bottom:0.4rem;'>Kandagawa Bakery</div>
+  <div class="main-title">売上予測 & 製造数プランナー</div>
+</div>
+""", unsafe_allow_html=True)
 
 models = load_models()
 dataset = load_dataset()
@@ -1081,7 +1063,7 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
         <div class="date-label">{r['date'][5:]}</div>
         <div class="weekday" style="color:{wd_color}">{r['weekday']}</div>
         <div class="sales-amount">¥{cur_val:,}</div>
-        <div style="font-size:0.72rem;color:#9a8070;margin:0.1rem 0 0.2rem">
+        <div style="font-size:0.68rem;color:#bbb;margin:0.08rem 0 0.18rem;letter-spacing:0.01em">
             パン ¥{bread_val:,} ／ サンド ¥{sand_val:,} ／ 二次 ¥{sec_val:,}
         </div>
         <div style="margin:0.2rem 0">{''.join(badges)}</div>
@@ -1109,15 +1091,15 @@ fig = go.Figure()
 fig.add_trace(go.Bar(
     x=dates_label, y=normal_vals,
     name="🟢 普通予測",
-    marker_color="#f5c842",
-    opacity=0.95,
+    marker_color="#1a1a1a",
+    opacity=0.82,
 ))
 fig.update_layout(
-    paper_bgcolor="#ffffff", plot_bgcolor="#faf6f2",
-    font=dict(color="#6a5a50", family="Noto Sans JP", size=13),
+    paper_bgcolor="#ffffff", plot_bgcolor="#fafaf8",
+    font=dict(color="#888", family="Inter, Noto Sans JP", size=12),
     height=360, margin=dict(t=20, b=20, l=10, r=10),
-    yaxis=dict(gridcolor="#e8e0d8", tickformat="¥,.0f", tickfont=dict(size=12)),
-    xaxis=dict(gridcolor="#e8e0d8", tickfont=dict(size=12)),
+    yaxis=dict(gridcolor="#ebebeb", tickformat="¥,.0f", tickfont=dict(size=11)),
+    xaxis=dict(gridcolor="#ebebeb", tickfont=dict(size=11)),
     legend=dict(orientation="h", yanchor="bottom", y=1.02, bgcolor="rgba(0,0,0,0)", font=dict(size=13)),
     hovermode="x unified",
 )
@@ -1166,12 +1148,12 @@ def build_product_table(products_list, results, date_cols, key_field="products",
                     # 二次加工品は数量ではなく「元パン依存」と表示
                     cells += '<td style="color:#9a8070;font-size:0.8rem">－</td>'
                 else:
-                    color = "#b85c00" if qty >= 20 else "#d4830a" if qty >= 10 else "#5a4a40"
-                    cells += f'<td style="color:{color}">{int(qty) if qty else "—"}</td>'
+                    color = "#1a1a1a" if qty >= 20 else "#555" if qty >= 10 else "#999"
+                    cells += f'<td style="color:{color};font-weight:{"600" if qty >= 20 else "400"}">{int(qty) if qty else "—"}</td>'
             if p in SECONDARY_PRODUCTS:
-                cells += '<td style="color:#9a8070;font-size:0.8rem">元パン依存</td>'
+                cells += '<td style="color:#ccc;font-size:0.8rem">—</td>'
             else:
-                cells += f'<td style="color:#c97b3e;font-weight:700">{int(total)}</td>'
+                cells += f'<td style="color:#1a1a1a;font-weight:700">{int(total)}</td>'
             rows_html += f"<tr>{cells}</tr>"
     if not rows_html:
         return ""
@@ -1244,9 +1226,9 @@ st.markdown('<div class="section-header">🍞 パン製造計画</div>', unsafe_
 bread_weekly = sum(r["bread_sales"] for r in results)
 bread_daily_avg = bread_weekly // 7
 st.markdown(
-    f'<div style="font-size:0.9rem;color:#9a8070;margin-bottom:0.8rem">'
-    f'週合計売上（パン）: <strong style="color:#c97b3e">¥{bread_weekly:,}</strong>'
-    f'　日平均: <strong style="color:#c97b3e">¥{bread_daily_avg:,}</strong></div>',
+    f'<div style="font-size:0.8rem;color:#aaa;margin-bottom:0.8rem;letter-spacing:0.02em">'
+    f'週合計: <strong style="color:#1a1a1a">¥{bread_weekly:,}</strong>'
+    f'　日平均: <strong style="color:#1a1a1a">¥{bread_daily_avg:,}</strong></div>',
     unsafe_allow_html=True,
 )
 
@@ -1261,9 +1243,9 @@ st.markdown('<div class="section-header">🥪 サンドイッチ・パニーノ�
 sand_weekly = sum(r["sandwich_sales"] for r in results)
 sand_daily_avg = sand_weekly // 7
 st.markdown(
-    f'<div style="font-size:0.9rem;color:#9a8070;margin-bottom:0.8rem">'
-    f'週合計売上（サンドイッチ）: <strong style="color:#c97b3e">¥{sand_weekly:,}</strong>'
-    f'　日平均: <strong style="color:#c97b3e">¥{sand_daily_avg:,}</strong></div>',
+    f'<div style="font-size:0.8rem;color:#aaa;margin-bottom:0.8rem;letter-spacing:0.02em">'
+    f'週合計: <strong style="color:#1a1a1a">¥{sand_weekly:,}</strong>'
+    f'　日平均: <strong style="color:#1a1a1a">¥{sand_daily_avg:,}</strong></div>',
     unsafe_allow_html=True,
 )
 
@@ -1280,9 +1262,9 @@ st.markdown('<div class="section-header">🔥 二次製品（リベイク）計�
 sec_weekly = sum(r["secondary_sales"] for r in results)
 sec_daily_avg = sec_weekly // 7
 st.markdown(
-    f'<div style="font-size:0.9rem;color:#9a8070;margin-bottom:0.8rem">'
-    f'週合計売上（二次製品）: <strong style="color:#c97b3e">¥{sec_weekly:,}</strong>'
-    f'　日平均: <strong style="color:#c97b3e">¥{sec_daily_avg:,}</strong></div>',
+    f'<div style="font-size:0.8rem;color:#aaa;margin-bottom:0.8rem;letter-spacing:0.02em">'
+    f'週合計: <strong style="color:#1a1a1a">¥{sec_weekly:,}</strong>'
+    f'　日平均: <strong style="color:#1a1a1a">¥{sec_daily_avg:,}</strong></div>',
     unsafe_allow_html=True,
 )
 
@@ -1296,11 +1278,12 @@ elif not filtered_sec:
 # 合計サマリー
 total_weekly = bread_weekly + sand_weekly + sec_weekly
 st.markdown(
-    f'<div style="margin-top:1.2rem;padding:1rem 1.4rem;background:#fff;border:2px solid #e8e0d8;'
-    f'border-radius:12px;font-size:1rem">'
-    f'週合計売上（税込）: <strong style="font-size:1.3rem;color:#c97b3e">¥{total_weekly:,}</strong>'
-    f'　<span style="color:#9a8070;font-size:0.85rem">'
-    f'パン ¥{bread_weekly:,} ／ サンド ¥{sand_weekly:,} ／ 二次製品 ¥{sec_weekly:,}</span>'
+    f'<div style="margin-top:1.4rem;padding:1rem 1.4rem;background:#fff;border:1px solid #e8e4de;'
+    f'border-radius:10px;">'
+    f'<div style="font-size:0.66rem;color:#aaa;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:0.3rem">週合計売上（税込）</div>'
+    f'<div style="font-size:1.6rem;font-weight:700;color:#1a1a1a;letter-spacing:-0.02em">¥{total_weekly:,}</div>'
+    f'<div style="font-size:0.75rem;color:#bbb;margin-top:0.25rem">'
+    f'パン ¥{bread_weekly:,} ／ サンド ¥{sand_weekly:,} ／ 二次製品 ¥{sec_weekly:,}</div>'
     f'</div>',
     unsafe_allow_html=True,
 )
