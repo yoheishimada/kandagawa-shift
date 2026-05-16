@@ -461,7 +461,7 @@ else:
             default_msg = (
                 f"【シフト再調整のお願い】\n\n"
                 f"{year}年{month}月の以下の日程でシフトが不足しています。\n"
-                f"入れる方はシフト申請フォームから再申請をお願いします。\n\n"
+                f"再度シフト申請フォームからの再申請をお願いいたします。\n\n"
                 f"{shortage_lines}"
             )
             lw_message = st.text_area('送信メッセージ（編集可）', default_msg, height=220)
