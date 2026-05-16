@@ -265,6 +265,29 @@ def load_staff():
     names = staff_sheet.col_values(1)[1:]
     return [n for n in names if n]
 
+@st.cache_data(ttl=300)
+def load_form_url():
+    try:
+        credentials_info = dict(st.secrets['gcp_service_account'])
+        creds = Credentials.from_service_account_info(credentials_info, scopes=[
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive',
+        ])
+    except Exception:
+        KEY_FILE = '/Users/shimadayohei/kandagawa-bakery/kandagawa_shift_key.json'
+        creds = Credentials.from_service_account_file(KEY_FILE, scopes=[
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive',
+        ])
+    gc = gspread.authorize(creds)
+    sh = gc.open_by_key(SPREADSHEET_ID)
+    try:
+        setting_sheet = sh.worksheet('設定')
+        url = setting_sheet.acell('B2').value
+        return url if url else None
+    except Exception:
+        return None
+
 def get_lineworks_token():
     """LINE WORKS Service Account認証でアクセストークンを取得"""
     try:
@@ -799,6 +822,10 @@ else:
 </div>
 <div style='font-size:0.7rem;color:#ccc;margin-bottom:1.2rem;'>※5分ごとに自動更新</div>
 """, unsafe_allow_html=True)
+
+    form_url = load_form_url()
+    if form_url:
+        st.markdown(f"<a href='{form_url}' target='_blank' style='display:inline-block;background:#1a1a1a;color:#fff;font-size:0.62rem;font-weight:500;letter-spacing:0.06em;padding:0.3rem 1rem;border-radius:6px;text-decoration:none;margin-bottom:1.2rem;'>シフト申請フォームを開く</a>", unsafe_allow_html=True)
 
     if not_submitted:
         badges = ''.join(
