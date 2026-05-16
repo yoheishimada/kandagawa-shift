@@ -566,13 +566,59 @@ else:
     submitted = set(df['お名前'].tolist())
     not_submitted = [n for n in all_staff if n not in submitted]
 
-    st.caption(f'※5分ごとに自動更新　　{len(df)}名回答済み　／　未提出 {len(not_submitted)}名')
+    daily_shifts = build_daily_shifts(df)
+    staff_colors = get_staff_colors(all_staff)
+
+    # KPIカード計算
+    _, days_in_month_kpi = calendar.monthrange(year, month)
+    total_slots = days_in_month_kpi * 2  # 早番+遅番
+    filled_slots = sum(
+        (1 if daily_shifts.get(f'{month}月{d}日（{"月火水木金土日"[calendar.weekday(year,month,d)]}）', {}).get('早') else 0) +
+        (1 if daily_shifts.get(f'{month}月{d}日（{"月火水木金土日"[calendar.weekday(year,month,d)]}）', {}).get('遅') else 0)
+        for d in range(1, days_in_month_kpi + 1)
+    )
+    shortage_days = sum(
+        1 for d in range(1, days_in_month_kpi + 1)
+        if not daily_shifts.get(f'{month}月{d}日（{"月火水木金土日"[calendar.weekday(year,month,d)]}）', {}).get('早')
+        or not daily_shifts.get(f'{month}月{d}日（{"月火水木金土日"[calendar.weekday(year,month,d)]}）', {}).get('遅')
+    )
+    total_shifts = sum(
+        len(v.get('早', [])) + len(v.get('遅', []))
+        for v in daily_shifts.values()
+    )
+    fulfillment = int(filled_slots / total_slots * 100) if total_slots > 0 else 0
+
+    kpi_color = '#10AC84' if fulfillment >= 80 else ('#FECA57' if fulfillment >= 50 else '#FF6B6B')
+    shortage_color = '#FF6B6B' if shortage_days > 0 else '#10AC84'
+
+    st.markdown(f"""
+<div style='display:flex;gap:16px;margin:1.2rem 0 1.6rem 0;flex-wrap:wrap;'>
+  <div style='flex:1;min-width:140px;background:#fff;border-radius:8px;padding:20px 24px;border:1px solid #e8e4de;'>
+    <div style='font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;margin-bottom:8px;'>回答済み</div>
+    <div style='font-size:2rem;font-weight:700;color:#1a1a1a;line-height:1;'>{len(submitted)}<span style='font-size:1rem;font-weight:400;color:#888;margin-left:4px;'>名</span></div>
+    <div style='font-size:0.75rem;color:#bbb;margin-top:6px;'>未提出 {len(not_submitted)}名</div>
+  </div>
+  <div style='flex:1;min-width:140px;background:#fff;border-radius:8px;padding:20px 24px;border:1px solid #e8e4de;'>
+    <div style='font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;margin-bottom:8px;'>シフト充足率</div>
+    <div style='font-size:2rem;font-weight:700;color:{kpi_color};line-height:1;'>{fulfillment}<span style='font-size:1rem;font-weight:400;color:#888;margin-left:2px;'>%</span></div>
+    <div style='font-size:0.75rem;color:#bbb;margin-top:6px;'>{filled_slots} / {total_slots} 枠</div>
+  </div>
+  <div style='flex:1;min-width:140px;background:#fff;border-radius:8px;padding:20px 24px;border:1px solid #e8e4de;'>
+    <div style='font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;margin-bottom:8px;'>人手不足の日</div>
+    <div style='font-size:2rem;font-weight:700;color:{shortage_color};line-height:1;'>{shortage_days}<span style='font-size:1rem;font-weight:400;color:#888;margin-left:4px;'>日</span></div>
+    <div style='font-size:0.75rem;color:#bbb;margin-top:6px;'>早番または遅番が0名</div>
+  </div>
+  <div style='flex:1;min-width:140px;background:#fff;border-radius:8px;padding:20px 24px;border:1px solid #e8e4de;'>
+    <div style='font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;margin-bottom:8px;'>総シフト数</div>
+    <div style='font-size:2rem;font-weight:700;color:#1a1a1a;line-height:1;'>{total_shifts}<span style='font-size:1rem;font-weight:400;color:#888;margin-left:4px;'>コマ</span></div>
+    <div style='font-size:0.75rem;color:#bbb;margin-top:6px;'>全スタッフ合計</div>
+  </div>
+</div>
+<div style='font-size:0.7rem;color:#ccc;margin-bottom:1.2rem;'>※5分ごとに自動更新</div>
+""", unsafe_allow_html=True)
 
     if not_submitted:
         st.warning('未提出のスタッフ：' + '　'.join(not_submitted))
-
-    daily_shifts = build_daily_shifts(df)
-    staff_colors = get_staff_colors(all_staff)
 
     # 凡例
     st.subheader(f'{year}年{month}月 シフト表')
