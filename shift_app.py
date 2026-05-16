@@ -93,7 +93,7 @@ h2 {
 }
 .cal-cell { border-color: #e8e4de !important; background: #ffffff; }
 .cal-empty { background: #f0ece6 !important; }
-.cal-date { color: #1a1a1a !important; font-size: 13px !important; font-weight: 600 !important; }
+.cal-date { color: #1a1a1a !important; font-size: 18px !important; font-weight: 700 !important; }
 .cal-section {
     color: #aaa !important;
     border-top-color: #f0ece6 !important;
@@ -386,8 +386,8 @@ def render_calendar(daily_shifts, year, month, staff_colors=None):
     .cal-sun { background: #fdeaea !important; }
     .cal-empty { background: #f0f0f0; }
     .cal-date { font-weight: bold; font-size: 15px; margin-bottom: 4px; color: #333; }
-    .cal-date-sat { font-weight: bold; font-size: 15px; margin-bottom: 4px; color: #4a90d9; }
-    .cal-date-sun { font-weight: bold; font-size: 15px; margin-bottom: 4px; color: #e07070; }
+    .cal-date-sat { font-weight: 700; font-size: 18px; margin-bottom: 4px; color: #4a90d9; }
+    .cal-date-sun { font-weight: 700; font-size: 18px; margin-bottom: 4px; color: #e07070; }
     .cal-section { font-size: 10px; color: #888; margin-top: 4px; border-top: 1px solid #eee; padding-top: 2px; }
     .cal-name { border-radius: 3px; padding: 2px 5px; margin: 2px 0;
                 font-size: 11px; display: block; font-weight: bold; }
