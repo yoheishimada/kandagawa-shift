@@ -690,6 +690,16 @@ def get_lineup(models):
                 lineup.append(best)
                 seen.add(best)
 
+    # サンドイッチ・リベイク二次製品はEXCEL_PRODUCT_ORDERに含まれないため
+    # モデルにある該当商品を別途追加する
+    for p in model_products:
+        if p in seen:
+            continue
+        cat = categorize_product(p)
+        if cat in SANDWICH_CATEGORIES or cat in REBAKE_CATEGORIES:
+            lineup.append(p)
+            seen.add(p)
+
     return lineup
 
 
