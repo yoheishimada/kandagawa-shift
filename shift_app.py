@@ -3,12 +3,14 @@ import gspread
 from google.oauth2.service_account import Credentials
 import pandas as pd
 import calendar
+import datetime
 import re
 import json
 import io
 import time
 import requests
 import jwt as pyjwt
+import jpholiday
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib import colors
 from reportlab.lib.units import mm
@@ -359,12 +361,20 @@ def render_calendar(daily_shifts, year, month, staff_colors=None):
     <style>
     .cal-wrap { overflow-x: auto; }
     .cal-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .cal-header { background: #3d3d7a; color: white; text-align: center;
+    .cal-header { background: #1a1a1a; color: white; text-align: center;
                   padding: 10px 4px; font-weight: bold; font-size: 15px; }
-    .cal-cell { border: 1px solid #ccc; vertical-align: top;
-                padding: 6px 4px; min-height: 100px; }
+    .cal-header-sat { background: #4a90d9; color: white; text-align: center;
+                      padding: 10px 4px; font-weight: bold; font-size: 15px; }
+    .cal-header-sun { background: #e07070; color: white; text-align: center;
+                      padding: 10px 4px; font-weight: bold; font-size: 15px; }
+    .cal-cell { border: 1px solid #e8e4de; vertical-align: top;
+                padding: 6px 4px; min-height: 100px; background: #fff; }
+    .cal-sat { background: #e8f4fd !important; }
+    .cal-sun { background: #fdeaea !important; }
     .cal-empty { background: #f0f0f0; }
     .cal-date { font-weight: bold; font-size: 15px; margin-bottom: 4px; color: #333; }
+    .cal-date-sat { font-weight: bold; font-size: 15px; margin-bottom: 4px; color: #4a90d9; }
+    .cal-date-sun { font-weight: bold; font-size: 15px; margin-bottom: 4px; color: #e07070; }
     .cal-section { font-size: 10px; color: #888; margin-top: 4px; border-top: 1px solid #eee; padding-top: 2px; }
     .cal-name { border-radius: 3px; padding: 2px 5px; margin: 2px 0;
                 font-size: 11px; display: block; font-weight: bold; }
@@ -374,8 +384,13 @@ def render_calendar(daily_shifts, year, month, staff_colors=None):
     <table class='cal-table'>
     <tr>
     """
-    for d in day_names:
-        html += f"<th class='cal-header'>{d}</th>"
+    for i, d in enumerate(day_names):
+        if i == 5:
+            html += f"<th class='cal-header-sat'>{d}</th>"
+        elif i == 6:
+            html += f"<th class='cal-header-sun'>{d}</th>"
+        else:
+            html += f"<th class='cal-header'>{d}</th>"
     html += "</tr>"
 
     day = 1
@@ -387,14 +402,23 @@ def render_calendar(daily_shifts, year, month, staff_colors=None):
             if (week == 0 and weekday < first_weekday) or day > days_in_month:
                 html += "<td class='cal-cell cal-empty'></td>"
             else:
-                wname = day_names[calendar.weekday(year, month, day)]
+                wd = calendar.weekday(year, month, day)
+                wname = day_names[wd]
                 date_label = f"{month}月{day}日（{wname}）"
                 shifts = daily_shifts.get(date_label, {'早': [], '遅': []})
                 early = shifts['早']
                 late = shifts['遅']
 
-                html += "<td class='cal-cell'>"
-                html += f"<div class='cal-date'>{day}</div>"
+                is_sat = (wd == 5)
+                is_sun = (wd == 6)
+                is_holiday = jpholiday.is_holiday(datetime.date(year, month, day))
+                is_red = is_sun or is_holiday
+
+                cell_class = 'cal-sat' if is_sat else ('cal-sun' if is_red else '')
+                date_class = 'cal-date-sat' if is_sat else ('cal-date-sun' if is_red else 'cal-date')
+
+                html += f"<td class='cal-cell {cell_class}'>"
+                html += f"<div class='{date_class}'>{day}</div>"
 
                 if early:
                     html += "<div class='cal-section'>早番</div>"
