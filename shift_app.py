@@ -498,7 +498,7 @@ def generate_staff_manual_pdf():
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4,
                             leftMargin=16*mm, rightMargin=16*mm,
-                            topMargin=12*mm, bottomMargin=12*mm)
+                            topMargin=7*mm, bottomMargin=7*mm)
 
     F = 'HeiseiKakuGo-W5'
     BLACK  = colors.HexColor('#1a1a1a')
@@ -523,21 +523,21 @@ def generate_staff_manual_pdf():
     elems.append(Paragraph('シフト申請マニュアル', ps('ttl', 18, BLACK, align=1)))
     elems.append(Spacer(1, 2*mm))
     elems.append(HRFlowable(width='100%', thickness=1.5, color=BLACK))
-    elems.append(Spacer(1, 5*mm))
+    elems.append(Spacer(1, 3*mm))
 
     # ── リード文 ──
     elems.append(Paragraph(
         'シフトに入れる日は、できるだけたくさん申請してください。'
         '「絶対入れる日」だけでなく「たぶん大丈夫」な日も積極的にチェックしてもらえると助かります。'
         '申請＝確定ではないので、気軽にたくさん入れてください。',
-        ps('lead', 10, BLACK, leading=16)))
-    elems.append(Spacer(1, 5*mm))
+        ps('lead', 10, BLACK, leading=15)))
+    elems.append(Spacer(1, 3*mm))
     elems.append(HRFlowable(width='100%', thickness=0.5, color=LGRAY))
-    elems.append(Spacer(1, 5*mm))
+    elems.append(Spacer(1, 3*mm))
 
     # ── フロー図（縦並び・中央寄せ） ──
     elems.append(Paragraph('シフト申請の流れ', ps('lbl', 10, GRAY)))
-    elems.append(Spacer(1, 3*mm))
+    elems.append(Spacer(1, 2*mm))
 
     flow_items = [
         ('毎月25日', ACCENT),
@@ -552,8 +552,8 @@ def generate_staff_manual_pdf():
     for i, (text, bg) in enumerate(flow_items):
         cell = Table(
             [[Paragraph(text, ParagraphStyle('fb', fontName=F, fontSize=11,
-                        textColor=WHITE, alignment=1, leading=16))]],
-            colWidths=[bw], rowHeights=[14*mm]
+                        textColor=WHITE, alignment=1, leading=15))]],
+            colWidths=[bw], rowHeights=[12*mm]
         )
         cell.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,-1), bg),
@@ -563,15 +563,15 @@ def generate_staff_manual_pdf():
         outer.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
         elems.append(outer)
         if i < len(flow_items) - 1:
-            elems.append(Paragraph('↓', ps('arr', 14, GRAY, align=1)))
+            elems.append(Paragraph('↓', ps('arr', 11, GRAY, align=1)))
 
-    elems.append(Spacer(1, 7*mm))
+    elems.append(Spacer(1, 3*mm))
     elems.append(HRFlowable(width='100%', thickness=0.5, color=LGRAY))
-    elems.append(Spacer(1, 6*mm))
+    elems.append(Spacer(1, 3*mm))
 
     # ── フォームの入力方法 ──
     elems.append(Paragraph('フォームの入力方法', ps('sh', 10, GRAY)))
-    elems.append(Spacer(1, 3*mm))
+    elems.append(Spacer(1, 2*mm))
 
     for num, title, desc in [
         ('①', '名前を選ぶ', 'リストから自分の名前を選んでください。'),
@@ -583,19 +583,19 @@ def generate_staff_manual_pdf():
             [[Paragraph(num, ps('n', 11, ACCENT, align=1)),
               Paragraph(f'<b>{title}</b><br/>{desc}',
                         ParagraphStyle('sc', fontName=F, fontSize=10,
-                                       textColor=BLACK, leading=15))]],
+                                       textColor=BLACK, leading=14))]],
             colWidths=[10*mm, W - 10*mm]
         )
         row_tbl.setStyle(TableStyle([
             ('VALIGN',        (0,0), (-1,-1), 'TOP'),
             ('TOPPADDING',    (0,0), (-1,-1), 2),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 3),
         ]))
         elems.append(row_tbl)
 
-    elems.append(Spacer(1, 5*mm))
+    elems.append(Spacer(1, 3*mm))
     elems.append(HRFlowable(width='100%', thickness=0.5, color=LGRAY))
-    elems.append(Spacer(1, 5*mm))
+    elems.append(Spacer(1, 3*mm))
 
     # ── 再申請 ──
     elems.append(Paragraph('再申請を求められたとき', ps('sh2', 10, GRAY)))
@@ -603,11 +603,11 @@ def generate_staff_manual_pdf():
     elems.append(Paragraph(
         '再申請は「上書き」ではなく「追加」です。最初の申請内容はそのまま残るので、'
         '新たに入れる日だけチェックして送信してください。',
-        ps('rb', 10, BLACK, leading=16)))
+        ps('rb', 10, BLACK, leading=15)))
 
-    elems.append(Spacer(1, 6*mm))
-    elems.append(HRFlowable(width='100%', thickness=1, color=BLACK))
     elems.append(Spacer(1, 4*mm))
+    elems.append(HRFlowable(width='100%', thickness=1, color=BLACK))
+    elems.append(Spacer(1, 3*mm))
     elems.append(Paragraph('困ったときは吉田さんに連絡してください。',
                             ps('ft', 9, GRAY, align=1)))
 
