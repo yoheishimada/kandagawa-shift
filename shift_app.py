@@ -492,7 +492,8 @@ else:
             )
 
             st.markdown('---')
-            st.subheader('📨 シフト再調整依頼をLINE WORKSで送る')
+            st.subheader('📨 LINE WORKSメッセージ送信')
+
             shortage_lines = '\n'.join(
                 f"・{r['日付']}　{r['シフト']}" for r in shortage_rows
             )
@@ -502,61 +503,74 @@ else:
                 f"再度シフト申請フォームからの再申請をお願いいたします。\n\n"
                 f"{shortage_lines}"
             )
-            lw_message = st.text_area('送信メッセージ（編集可）', default_msg, height=220)
 
-            if st.button('📨 全スタッフにLINE WORKSで一斉送信'):
+            def do_lw_send(targets, message):
                 with st.spinner('LINE WORKSに接続中...'):
                     token, err = get_lineworks_token()
                 if err:
                     st.error(f'認証エラー: {err}')
+                    return
+                try:
+                    domain_id = st.secrets["lineworks"]["domain_id"]
+                    bot_id = st.secrets["lineworks"]["bot_id"]
+                except Exception as e:
+                    st.error(f'secrets設定エラー: {e}')
+                    return
+                with st.spinner('ユーザー一覧を取得中...'):
+                    lw_users = get_lineworks_users(token, domain_id)
+                name_to_userid = {}
+                for u in lw_users:
+                    un = u.get("userName", {})
+                    full1 = un.get("lastName", "") + un.get("firstName", "")
+                    full2 = un.get("firstName", "") + un.get("lastName", "")
+                    uid = u.get("userId", "")
+                    if full1:
+                        name_to_userid[full1] = uid
+                    if full2 and full2 != full1:
+                        name_to_userid[full2] = uid
+                sent, failed, unmatched = [], [], []
+                for staff_name in targets:
+                    uid = name_to_userid.get(staff_name)
+                    if not uid:
+                        unmatched.append(staff_name)
+                        continue
+                    status, _ = send_lineworks_dm(token, bot_id, uid, message)
+                    if status in (200, 201):
+                        sent.append(staff_name)
+                    else:
+                        failed.append(f"{staff_name}（{status}）")
+                if sent:
+                    st.success(f'✅ 送信成功 {len(sent)}名：' + '、'.join(sent))
+                if failed:
+                    st.error(f'❌ 送信失敗 {len(failed)}名：' + '、'.join(failed))
+                if unmatched:
+                    st.warning(f'⚠️ アカウントが見つからなかったスタッフ：' + '、'.join(unmatched))
+
+            # ① 複数人への一斉送信
+            st.markdown('**① 選択したスタッフに一斉送信**')
+            selected_staff = st.multiselect(
+                '送信先を選択（複数可）',
+                options=all_staff,
+                default=all_staff,
+            )
+            lw_message = st.text_area('送信メッセージ（編集可）', default_msg, height=180)
+            if st.button(f'📨 選択した{len(selected_staff)}名に送信'):
+                if not selected_staff:
+                    st.warning('送信先を選択してください')
                 else:
-                    try:
-                        domain_id = st.secrets["lineworks"]["domain_id"]
-                        bot_id = st.secrets["lineworks"]["bot_id"]
-                    except Exception as e:
-                        st.error(f'secrets設定エラー: {e}')
-                        st.stop()
+                    do_lw_send(selected_staff, lw_message)
 
-                    with st.spinner('ユーザー一覧を取得中...'):
-                        lw_users = get_lineworks_users(token, domain_id)
+            st.markdown('---')
 
-                    # LINE WORKSの名前(姓+名)とスタッフリストをマッチング
-                    name_to_userid = {}
-                    for u in lw_users:
-                        un = u.get("userName", {})
-                        # 姓名を結合（姓+名、名+姓の両方を登録）
-                        full1 = un.get("lastName", "") + un.get("firstName", "")
-                        full2 = un.get("firstName", "") + un.get("lastName", "")
-                        uid = u.get("userId", "")
-                        if full1:
-                            name_to_userid[full1] = uid
-                        if full2 and full2 != full1:
-                            name_to_userid[full2] = uid
-
-                    sent, failed, unmatched = [], [], []
-                    progress = st.progress(0)
-                    for i, staff_name in enumerate(all_staff):
-                        progress.progress((i + 1) / len(all_staff))
-                        uid = name_to_userid.get(staff_name)
-                        if not uid:
-                            unmatched.append(staff_name)
-                            continue
-                        status, body = send_lineworks_dm(token, bot_id, uid, lw_message)
-                        if status in (200, 201):
-                            sent.append(staff_name)
-                        else:
-                            failed.append(f"{staff_name}（{status}）")
-                    progress.empty()
-
-                    if sent:
-                        st.success(f'✅ 送信成功 {len(sent)}名：' + '、'.join(sent))
-                    if failed:
-                        st.error(f'❌ 送信失敗 {len(failed)}名：' + '、'.join(failed))
-                    if unmatched:
-                        st.warning(
-                            f'⚠️ LINE WORKSアカウントが見つからなかったスタッフ {len(unmatched)}名：'
-                            + '、'.join(unmatched)
-                        )
+            # ② 個人への個別メッセージ
+            st.markdown('**② 個人への個別メッセージ**')
+            target_person = st.selectbox('送信相手', options=all_staff)
+            personal_msg = st.text_area('メッセージを入力', height=120, key='personal_msg')
+            if st.button('📩 個別送信'):
+                if not personal_msg.strip():
+                    st.warning('メッセージを入力してください')
+                else:
+                    do_lw_send([target_person], personal_msg)
         else:
             st.success('全日程・全シフトに1名以上入っています！')
 
