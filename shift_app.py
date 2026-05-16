@@ -374,12 +374,15 @@ def render_calendar(daily_shifts, year, month, staff_colors=None):
     <style>
     .cal-wrap { overflow-x: auto; }
     .cal-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .cal-header { background: #1a1a1a; color: white; text-align: center;
-                  padding: 10px 4px; font-weight: bold; font-size: 15px; }
-    .cal-header-sat { background: #4a90d9; color: white; text-align: center;
-                      padding: 10px 4px; font-weight: bold; font-size: 15px; }
-    .cal-header-sun { background: #e07070; color: white; text-align: center;
-                      padding: 10px 4px; font-weight: bold; font-size: 15px; }
+    .cal-header { background: #1a1a1a; color: white !important; text-align: center;
+                  padding: 10px 4px; font-weight: bold !important; font-size: 15px !important;
+                  text-transform: none !important; letter-spacing: normal !important; margin: 0 !important; }
+    .cal-header-sat { background: #4a90d9; color: white !important; text-align: center;
+                      padding: 10px 4px; font-weight: bold !important; font-size: 15px !important;
+                      text-transform: none !important; letter-spacing: normal !important; margin: 0 !important; }
+    .cal-header-sun { background: #e07070; color: white !important; text-align: center;
+                      padding: 10px 4px; font-weight: bold !important; font-size: 15px !important;
+                      text-transform: none !important; letter-spacing: normal !important; margin: 0 !important; }
     .cal-cell { border: 1px solid #e8e4de; vertical-align: top;
                 padding: 6px 4px; min-height: 100px; background: #fff; }
     .cal-sat { background: #e8f4fd !important; }
