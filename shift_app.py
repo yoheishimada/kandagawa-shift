@@ -794,11 +794,13 @@ else:
             st.markdown('**② 個人への個別メッセージ**')
             target_person = st.selectbox('送信相手', options=all_staff)
             personal_msg = st.text_area('メッセージを入力', height=120, key='personal_msg')
-            if st.button('個別送信'):
-                if not personal_msg.strip():
-                    st.warning('メッセージを入力してください')
-                else:
-                    do_lw_send([target_person], personal_msg)
+            _, col_send = st.columns([3, 1.2])
+            with col_send:
+                if st.button('個別送信', use_container_width=True):
+                    if not personal_msg.strip():
+                        st.warning('メッセージを入力してください')
+                    else:
+                        do_lw_send([target_person], personal_msg)
         else:
             st.success('全日程・全シフトに1名以上入っています！')
 
@@ -829,6 +831,8 @@ else:
             col_d.write(f'遅番 {row["遅番日数"]}日')
             col_e.progress(float(pct), text=f'合計 {total}日')
 
-if st.button('データを再読み込み'):
-    st.cache_data.clear()
-    st.rerun()
+_, col_reload = st.columns([3, 1.2])
+with col_reload:
+    if st.button('データを再読み込み', use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
