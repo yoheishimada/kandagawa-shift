@@ -62,9 +62,9 @@ h2 {
     border: none !important;
     border-radius: 0px !important;
     font-weight: 500 !important;
-    font-size: 0.8rem !important;
+    font-size: 0.75rem !important;
     letter-spacing: 0.08em !important;
-    padding: 0.6rem 1.8rem !important;
+    padding: 0.4rem 1.2rem !important;
     transition: opacity 0.2s ease !important;
 }
 .stButton > button:hover {
@@ -118,15 +118,21 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    st.title('神田川ベーカリー シフト表')
-    st.markdown('---')
-    pw = st.text_input('パスワードを入力してください', type='password')
-    if st.button('ログイン'):
-        if pw == APP_PASSWORD:
-            st.session_state.authenticated = True
-            st.rerun()
-        else:
-            st.error('パスワードが違います')
+    st.markdown("""
+    <div style='padding: 2rem 0 1.5rem 0; border-bottom: 1px solid #e8e4de; margin-bottom: 1.5rem;'>
+      <div style='font-size:0.65rem;letter-spacing:0.3em;color:#aaa;text-transform:uppercase;margin-bottom:0.6rem;'>Kandagawa Bakery</div>
+      <div style='font-size:1.6rem;font-weight:600;letter-spacing:0.02em;color:#1a1a1a;line-height:1;'>シフト表</div>
+    </div>
+    """, unsafe_allow_html=True)
+    col, _ = st.columns([1, 2])
+    with col:
+        pw = st.text_input('パスワードを入力してください', type='password')
+        if st.button('ログイン', use_container_width=False):
+            if pw == APP_PASSWORD:
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error('パスワードが違います')
     st.stop()
 
 # --- 認証済み以降の処理 ---
