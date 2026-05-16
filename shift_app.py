@@ -19,7 +19,7 @@ from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 
 SPREADSHEET_ID = '1sVh4_9vbkucCRSenosYISpw_mFSsUioPLs0zBfxNT0U'
 APP_PASSWORD = 'Kandagawa0222'
-ADMIN_PASSWORD = 'Kandagawa_bakery_20170222'
+ADMIN_PASSWORD = '0222'
 
 st.set_page_config(page_title='神田川ベーカリー シフト表', layout='wide')
 
@@ -146,7 +146,7 @@ st.markdown("""
 # サイドバー：管理者ログイン
 with st.sidebar:
     st.header('管理者メニュー')
-    admin_pw = st.text_input('管理者パスワード')
+    admin_pw = st.text_input('管理者パスワード', type='password')
     is_admin = (admin_pw == ADMIN_PASSWORD)
     if admin_pw and not is_admin:
         st.error('パスワードが違います')
