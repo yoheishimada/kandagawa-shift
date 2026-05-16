@@ -137,9 +137,20 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; font-size:
     border-top: 2px solid #d8cfc5; border-bottom: 1px solid #e0d8d0;
     text-align: left;
 }
+/* 日付カード用バッジ（大きめ） */
 .badge-sellout   { background: #fde8e8; color: #c0392b; border: 1.5px solid #e57373; }
 .badge-loss      { background: #fff8e1; color: #b07000; border: 1.5px solid #ffca28; }
 .badge-secondary { background: #f0f4ff; color: #4a6fa5; border: 1.5px solid #a0b4d8; }
+
+/* 製造数テーブル用インジケーター（コンパクト） */
+.tbl-badge {
+    display: inline-block; font-size: 0.6rem; font-weight: 700;
+    padding: 0.05rem 0.3rem; border-radius: 3px; margin-left: 0.35rem;
+    vertical-align: middle; letter-spacing: 0.02em; line-height: 1.4;
+}
+.tbl-sellout  { background: #fde8e8; color: #c0392b; border: 1px solid #e57373; }
+.tbl-loss     { background: #fff8e1; color: #966000; border: 1px solid #f0c040; }
+.tbl-secondary{ background: #f0f4ff; color: #4a6fa5; border: 1px solid #b0c4e0; }
 
 /* セクションヘッダー */
 .section-header {
@@ -645,26 +656,97 @@ def fetch_forecast(start: str, end: str):
         return None  # 呼び出し元で判定
 
 
-def get_lineup(dataset, base_date):
-    records_by_date = {r["date"]: r for r in dataset["records"]}
-    all_dates = sorted(records_by_date.keys())
-    if not all_dates:
-        return [], ""
-    # まず直近30日以内を探す
-    for i in range(1, 31):
-        dt_str = (base_date - timedelta(days=i)).isoformat()
-        if dt_str in records_by_date:
-            r = records_by_date[dt_str]
-            products = [k[4:] for k, v in r.items() if k.startswith("qty_") and v > 0]
-            return sorted(products), dt_str
-    # 見つからない場合（遠い未来の日付など）は最新レコードを使用
-    latest_dt = all_dates[-1]
-    r = records_by_date[latest_dt]
-    products = [k[4:] for k, v in r.items() if k.startswith("qty_") and v > 0]
-    return sorted(products), latest_dt
+def get_lineup(models):
+    """スプレッドシートの商品構成（EXCEL_PRODUCT_ORDER）をPOS商品名にマッピングして返す。
+    廃番品の混入・新商品の漏れを防ぐため、スプレッドシートを唯一の正として固定する。"""
+    model_products = list(models.get("product_models", {}).keys())
+    lineup = []
+    seen = set()
+
+    for sheet_name in EXCEL_PRODUCT_ORDER:
+        # 優先1: 完全一致
+        if sheet_name in models.get("product_models", {}):
+            if sheet_name not in seen:
+                lineup.append(sheet_name)
+                seen.add(sheet_name)
+            continue
+        # 優先2: sheet_name が pos_name の部分文字列（最短）
+        matches = [p for p in model_products if sheet_name in p]
+        if matches:
+            best = min(matches, key=len)
+            if best not in seen:
+                lineup.append(best)
+                seen.add(best)
+            continue
+        # 優先3: pos_name が sheet_name の部分文字列（最長）
+        matches = [p for p in model_products if p in sheet_name]
+        if matches:
+            best = max(matches, key=len)
+            if best not in seen:
+                lineup.append(best)
+                seen.add(best)
+
+    return lineup
 
 
-def make_features(dt_str, weather, prev_close_min=1020):
+_LAG_BASELINE = 70000  # ラグ特徴量のデフォルト値（特徴量が取れない場合）
+_LAG_DEFAULTS = {
+    "sales_lag_7":   _LAG_BASELINE,
+    "sales_lag_28":  _LAG_BASELINE,
+    "sales_lag_365": _LAG_BASELINE,
+    "sales_ma7":     _LAG_BASELINE,
+    "sales_ma28":    _LAG_BASELINE,
+    "yoy_ratio":     1.0,
+    "momentum":      1.0,
+}
+
+
+def build_sales_map(records):
+    """dataset["records"] から {日付文字列: 売上合計} の辞書を作成"""
+    return {r["date"]: r["total_sales"] for r in records if "total_sales" in r}
+
+
+def compute_lag_features(dt_str, sales_map):
+    """予測対象日のラグ特徴量を過去実績から計算する。
+    成長・衰退どちらのトレンドも yoy_ratio / momentum に自然に反映される。"""
+    def lookup_near(offset_days, window=3):
+        target = date.fromisoformat(dt_str) - timedelta(days=offset_days)
+        for delta in range(window + 1):
+            for sign in [0, 1, -1]:
+                cand = (target + timedelta(days=delta * sign)).isoformat()
+                if cand in sales_map:
+                    return sales_map[cand]
+        return None
+
+    def moving_avg(days):
+        d0 = date.fromisoformat(dt_str)
+        vals = [sales_map[d] for i in range(1, days + 1)
+                if (d := (d0 - timedelta(days=i)).isoformat()) in sales_map]
+        return sum(vals) / len(vals) if vals else None
+
+    s7   = lookup_near(7)
+    s28  = lookup_near(28)
+    s365 = lookup_near(365)
+    ma7  = moving_avg(7)
+    ma28 = moving_avg(28)
+
+    yoy = (ma28 / s365) if (s365 and s365 > 0 and ma28) else 1.0
+    yoy = max(0.5, min(2.0, yoy))
+    momentum = (ma7 / ma28) if (ma7 and ma28 and ma28 > 0) else 1.0
+    momentum = max(0.5, min(2.0, momentum))
+
+    return {
+        "sales_lag_7":   s7   if s7   is not None else _LAG_BASELINE,
+        "sales_lag_28":  s28  if s28  is not None else _LAG_BASELINE,
+        "sales_lag_365": s365 if s365 is not None else _LAG_BASELINE,
+        "sales_ma7":     ma7  if ma7  is not None else _LAG_BASELINE,
+        "sales_ma28":    ma28 if ma28 is not None else _LAG_BASELINE,
+        "yoy_ratio":     yoy,
+        "momentum":      momentum,
+    }
+
+
+def make_features(dt_str, weather, prev_close_min=1020, lag_feats=None):
     d = date.fromisoformat(dt_str)
     w = weather.get(dt_str, {})
     m, wd = d.month, d.weekday()
@@ -672,6 +754,7 @@ def make_features(dt_str, weather, prev_close_min=1020):
     sk = sakura_features(d)
     ts = tsuyu_features(d)
     ht = heat_features(w.get("temp_max", 20))
+    lf = lag_feats if lag_feats is not None else _LAG_DEFAULTS
     return [
         d.year, m, d.day, wd, woy,
         int(wd >= 5), int(_jpholiday.is_holiday(d)),
@@ -686,6 +769,10 @@ def make_features(dt_str, weather, prev_close_min=1020):
         ts["is_tsuyu"], ts["days_into_tsuyu"],
         ht["heat_excess"], ht["is_hot_day"], ht["is_very_hot"],
         prev_close_min,  # 前日の最終レジ時刻（分）
+        # ラグ特徴量：トレンド・前年比・勢い（成長・衰退どちらも反映）
+        lf["sales_lag_7"], lf["sales_lag_28"], lf["sales_lag_365"],
+        lf["sales_ma7"], lf["sales_ma28"],
+        lf["yoy_ratio"], lf["momentum"],
         np.sin(2*np.pi*m/12), np.cos(2*np.pi*m/12),
         np.sin(2*np.pi*wd/7), np.cos(2*np.pi*wd/7),
         np.sin(2*np.pi*woy/52), np.cos(2*np.pi*woy/52),
@@ -714,7 +801,7 @@ def find_calib_for_pos(pos_name, calib_dict):
     return None
 
 
-def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffer_pct, calib=None, prev_close_min=1020):
+def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffer_pct, calib=None, prev_close_min=1020, sales_map=None):
     lineup_set = set(lineup)
     calib = calib or {}
     sales_models = models.get("sales_models", {})
@@ -724,7 +811,8 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
         dt_str = d.isoformat()
         # 初日のみ前日の最終時刻を使用、2日目以降はデフォルト（17時）
         pcm = prev_close_min if i == 0 else 1020
-        X = np.array([make_features(dt_str, weather, pcm)])
+        lag_feats = compute_lag_features(dt_str, sales_map) if sales_map else None
+        X = np.array([make_features(dt_str, weather, pcm, lag_feats)])
 
         # モード別スケール係数（sales_modelsの分位点予測比率）
         if sales_models and mode != "normal":
@@ -835,9 +923,9 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
     return results
 
 
-def predict_all_modes(start_date, weather, models, lineup, latest_prices, buffer_pct, calib=None, prev_close_min=1020):
+def predict_all_modes(start_date, weather, models, lineup, latest_prices, buffer_pct, calib=None, prev_close_min=1020, sales_map=None):
     return {
-        mode: predict_week(start_date, weather, models, lineup, latest_prices, mode, buffer_pct, calib, prev_close_min)
+        mode: predict_week(start_date, weather, models, lineup, latest_prices, mode, buffer_pct, calib, prev_close_min, sales_map)
         for mode in ["bear", "normal", "bull"]
     }
 
@@ -901,8 +989,8 @@ with st.sidebar:
     st.markdown("### 📊 予測モード")
     mode = st.radio(
         "予測モード選択",
-        options=["bear", "normal", "bull"],
-        format_func=lambda x: {"bear": "🔵 弱気予測", "normal": "🟢 普通予測", "bull": "🔴 強気予測"}[x],
+        options=["bull", "normal", "bear"],
+        format_func=lambda x: {"bull": "🔴 強気予測", "normal": "🟢 普通予測", "bear": "🔵 弱気予測"}[x],
         index=1,
         label_visibility="collapsed",
     )
@@ -911,11 +999,8 @@ with st.sidebar:
 
     st.divider()
     st.markdown("### 🍞 ラインナップ")
-    lineup, lineup_date = get_lineup(dataset, start_date)
-    days_diff = (start_date - date.fromisoformat(lineup_date)).days if lineup_date else 0
-    st.caption(f"基準日: {lineup_date}")
-    if days_diff > 30:
-        st.caption(f"⚠️ 直近データなし。最終レコード({lineup_date})のラインナップを使用")
+    lineup = get_lineup(models)
+    st.caption("スプレッドシート商品構成（固定）")
     st.caption(f"{len(lineup)} 商品")
 
     st.divider()
@@ -951,8 +1036,9 @@ weather_available = weather is not None
 if not weather_available:
     weather = {}  # 空dictで make_features のデフォルト値を使用
 
-# 全モード予測
-all_results = predict_all_modes(start_date, weather, models, lineup, latest_prices, buffer_pct, calib, prev_close_min)
+# 全モード予測（ラグ特徴量: 過去実績から直近トレンドを自動反映）
+sales_map = build_sales_map(dataset["records"])
+all_results = predict_all_modes(start_date, weather, models, lineup, latest_prices, buffer_pct, calib, prev_close_min, sales_map)
 results = all_results[mode]
 
 # ── 週間売上カード ──
@@ -1059,20 +1145,20 @@ def build_product_table(products_list, results, date_cols, key_field="products",
         rows_html += f'<tr class="cat-header"><td colspan="{n_cols}">▸ {cat}</td></tr>'
         for p in prods:
             total = sum(r[key_field].get(p, 0) for r in results)
-            # 実績バッジ
+            # 実績バッジ（テーブル用コンパクトスタイル）
             stat = match_pos_to_sheet(p, sheet_stats_map) if sheet_stats_map else None
             indicator = ""
             if stat:
                 if stat["sellout_rate"] > 0.33:
-                    indicator = ' <span class="badge badge-sellout">売切注意</span>'
+                    indicator = ' <span class="tbl-badge tbl-sellout">売切↑</span>'
                 elif stat["avg_loss_pct"] > 15:
-                    indicator = ' <span class="badge badge-loss">廃棄注意</span>'
+                    indicator = ' <span class="tbl-badge tbl-loss">廃棄↓</span>'
             # 二次加工品バッジ
             if p in SECONDARY_PRODUCTS:
-                indicator += ' <span class="badge badge-secondary">二次加工</span>'
+                indicator += ' <span class="tbl-badge tbl-secondary">二次</span>'
             # 食パン1斤バッジ（2斤に統合済み）
             if any(kin1 in p or p in kin1 for kin1, _ in SHOKUPAN_PAIRS):
-                indicator += ' <span class="badge badge-secondary">2斤に統合</span>'
+                indicator += ' <span class="tbl-badge tbl-secondary">→2斤</span>'
             cells = f"<td>{p}{indicator}</td>"
             for r in results:
                 qty = r[key_field].get(p, 0)
@@ -1349,9 +1435,9 @@ with st.expander("ℹ️ 凡例・説明"):
 - カード下部のバーは弱気〜強気の予測レンジを示します
 - 安全在庫バッファーは製造数のみに適用（売上計算には影響しません）
 
-**実績バッジ（製造数テーブル）**
-- 🔴 **売切注意**: 過去33%以上の日で売り切れ → 製造数の増加を検討
-- 🟡 **廃棄注意**: 平均ロス率15%超 → 製造数の削減またはバッファー引き下げを検討
+**実績インジケーター（製造数テーブル）**
+- 🔴 **売切↑**: 過去33%以上の日で売り切れ → 製造数の増加を検討
+- 🟡 **廃棄↓**: 平均ロス率15%超 → 製造数の削減またはバッファー引き下げを検討
 
 **実績分析レポートの推奨コメント**
 - ↑ 製造数を増やす: 売切率33%超かつロス率20%未満

@@ -305,6 +305,56 @@ def build_dataset():
             else:
                 prev_close_map[dt_str] = DEFAULT_CLOSE
 
+    # ── ラグ特徴量の事前計算 ────────────────────────────────────
+    # 7日・28日・365日前の売上と移動平均・前年比・勢いを算出
+    # 成長・衰退どちらのトレンドも自然に反映される
+    sales_map = dict(zip(dates_sorted, [daily_sales[d] for d in dates_sorted]))
+
+    def lookup_sales_near(dt_str, offset_days, window=3):
+        """offset_days前後window日以内で最も近い営業日の売上を返す"""
+        target = date.fromisoformat(dt_str) - timedelta(days=offset_days)
+        for delta in range(window + 1):
+            for sign in [0, 1, -1]:
+                cand = (target + timedelta(days=delta * sign)).isoformat()
+                if cand in sales_map:
+                    return sales_map[cand]
+        return None
+
+    def moving_avg(dt_str, days):
+        """直近days日の移動平均"""
+        d0 = date.fromisoformat(dt_str)
+        vals = [sales_map[d] for i in range(1, days + 1)
+                if (d := (d0 - timedelta(days=i)).isoformat()) in sales_map]
+        return sum(vals) / len(vals) if vals else None
+
+    lag_features_map = {}
+    BASELINE_SALES = 70000  # 特徴量がない場合のデフォルト（全期間平均）
+
+    for dt_str in dates_sorted:
+        s7   = lookup_sales_near(dt_str, 7)    # 先週同曜日
+        s28  = lookup_sales_near(dt_str, 28)   # 4週前
+        s365 = lookup_sales_near(dt_str, 365)  # 昨年同日
+        ma7  = moving_avg(dt_str, 7)           # 直近7日移動平均
+        ma28 = moving_avg(dt_str, 28)          # 直近28日移動平均
+
+        # 前年比（成長 > 1.0、衰退 < 1.0）
+        yoy = (ma28 / s365) if (s365 and s365 > 0 and ma28) else 1.0
+        yoy = max(0.5, min(2.0, yoy))  # 極端な値をクリップ
+
+        # 直近の勢い（加速 > 1.0、減速 < 1.0）
+        momentum = (ma7 / ma28) if (ma7 and ma28 and ma28 > 0) else 1.0
+        momentum = max(0.5, min(2.0, momentum))
+
+        lag_features_map[dt_str] = {
+            "sales_lag_7":   s7   if s7   is not None else BASELINE_SALES,
+            "sales_lag_28":  s28  if s28  is not None else BASELINE_SALES,
+            "sales_lag_365": s365 if s365 is not None else BASELINE_SALES,
+            "sales_ma7":     ma7  if ma7  is not None else BASELINE_SALES,
+            "sales_ma28":    ma28 if ma28 is not None else BASELINE_SALES,
+            "yoy_ratio":     yoy,      # 前年比トレンド
+            "momentum":      momentum, # 直近の勢い（加速/減速）
+        }
+
     # 需要補正データを読み込む（早期売切による打ち切りデータの補正）
     corrections_path = os.path.join(DATA_DIR, "demand_corrections.pkl")
     if os.path.exists(corrections_path):
@@ -350,6 +400,8 @@ def build_dataset():
             # 前日の最終レジ時刻（分）：売れ行きの勢いを表す指標
             "prev_close_min": prev_close_map.get(dt_str, DEFAULT_CLOSE),
             "total_sales": daily_sales[dt_str],
+            # ラグ特徴量（トレンド・前年比・勢い）
+            **lag_features_map[dt_str],
             **sakura_features(d),
             **tsuyu_features(d),
             **heat_features(w.get("temp_max", 20)),

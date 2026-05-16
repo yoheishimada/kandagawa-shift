@@ -6,6 +6,7 @@
 import os
 import pickle
 import numpy as np
+from datetime import date
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import mean_absolute_error
@@ -29,6 +30,14 @@ BASE_FEATURES = [
     "heat_excess", "is_hot_day", "is_very_hot",
     # 前日の最終レジ時刻（分）：前日の売れ行きの勢い
     "prev_close_min",
+    # ラグ特徴量：トレンド・前年比・勢い（成長・衰退どちらも反映）
+    "sales_lag_7",    # 先週同曜日の売上
+    "sales_lag_28",   # 4週前の売上
+    "sales_lag_365",  # 昨年同日の売上
+    "sales_ma7",      # 直近7日移動平均
+    "sales_ma28",     # 直近28日移動平均
+    "yoy_ratio",      # 前年比（成長>1.0 / 衰退<1.0）
+    "momentum",       # 直近の勢い（加速>1.0 / 減速<1.0）
 ]
 
 CYCLIC_FEATURES = ["month_sin", "month_cos", "weekday_sin", "weekday_cos", "week_sin", "week_cos"]
@@ -78,17 +87,27 @@ def add_cyclic_features(records):
 
 
 def records_to_xy(records, target_col):
-    X, y = [], []
+    """特徴量行列・目的変数・サンプル重みを返す。
+    最新30日: 3倍、最新90日: 2倍、それ以外: 1倍 で直近トレンドを強調"""
+    last_date = date.fromisoformat(records[-1]["date"])
+    X, y, weights = [], [], []
     for r in records:
         if target_col not in r:
             continue
         X.append([r.get(f, 0) for f in ALL_FEATURES])
         y.append(r[target_col])
-    return np.array(X), np.array(y)
+        days_ago = (last_date - date.fromisoformat(r["date"])).days
+        if days_ago <= 30:
+            weights.append(3.0)
+        elif days_ago <= 90:
+            weights.append(2.0)
+        else:
+            weights.append(1.0)
+    return np.array(X), np.array(y), np.array(weights)
 
 
-def train_quantile_models(X, y, label=""):
-    """弱気/普通/強気の3モデルを学習"""
+def train_quantile_models(X, y, weights, label=""):
+    """弱気/普通/強気の3モデルを学習（サンプル重み付き）"""
     models = {}
     maes = {}
     tscv = TimeSeriesSplit(n_splits=3)
@@ -97,13 +116,13 @@ def train_quantile_models(X, y, label=""):
         fold_maes = []
         for train_idx, val_idx in tscv.split(X):
             m = make_hgb(q)
-            m.fit(X[train_idx], y[train_idx])
+            m.fit(X[train_idx], y[train_idx], sample_weight=weights[train_idx])
             fold_maes.append(mean_absolute_error(y[val_idx], m.predict(X[val_idx])))
         mae = np.mean(fold_maes)
         maes[name] = mae
         # 全データで最終学習
         m = make_hgb(q)
-        m.fit(X, y)
+        m.fit(X, y, sample_weight=weights)
         models[name] = m
 
     if label:
@@ -111,14 +130,14 @@ def train_quantile_models(X, y, label=""):
     return models
 
 
-def train_single_model(X, y):
-    """商品別数量モデル（普通予測のみ）"""
+def train_single_model(X, y, weights):
+    """商品別数量モデル（普通予測のみ、サンプル重み付き）"""
     tscv = TimeSeriesSplit(n_splits=3)
     for train_idx, val_idx in tscv.split(X):
         m = make_hgb()
-        m.fit(X[train_idx], y[train_idx])
+        m.fit(X[train_idx], y[train_idx], sample_weight=weights[train_idx])
     m = make_hgb()
-    m.fit(X, y)
+    m.fit(X, y, sample_weight=weights)
     return m
 
 
@@ -133,8 +152,8 @@ def main():
 
     # --- 売上合計：3分位点モデル ---
     print("\n[1] 売上合計モデルを学習中（弱気/普通/強気）...")
-    X_s, y_s = records_to_xy(records, "total_sales")
-    sales_models = train_quantile_models(X_s, y_s, "売上合計")
+    X_s, y_s, w_s = records_to_xy(records, "total_sales")
+    sales_models = train_quantile_models(X_s, y_s, w_s, "売上合計")
 
     # --- 商品別数量モデル ---
     print("\n[2] 商品別数量モデルを学習中...")
@@ -150,10 +169,10 @@ def main():
 
     product_models = {}
     for i, product in enumerate(target_products):
-        X, y = records_to_xy(records, f"qty_{product}")
+        X, y, w = records_to_xy(records, f"qty_{product}")
         if len(X) < 50:
             continue
-        product_models[product] = train_single_model(X, y)
+        product_models[product] = train_single_model(X, y, w)
         if (i + 1) % 20 == 0:
             print(f"  {i+1}/{len(target_products)} 完了...")
 
