@@ -183,7 +183,7 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.rerun()
     st.markdown('---')
-    st.markdown("<a href='?view=manual' target='_blank' style='color:#1a1a1a;font-size:0.85rem;'>使い方マニュアル</a>", unsafe_allow_html=True)
+    st.markdown("<a href='?view=manual' target='_blank' style='display:inline-block;background:#1a1a1a;color:#fff;font-size:0.62rem;font-weight:500;letter-spacing:0.06em;padding:0.3rem 1rem;border-radius:6px;text-decoration:none;'>使い方マニュアル</a>", unsafe_allow_html=True)
 
 @st.cache_data(ttl=300)
 def load_data():
