@@ -101,7 +101,7 @@ h2 {
     letter-spacing: 0.12em;
     text-transform: uppercase;
 }
-.cal-name { font-size: 10px !important; border-radius: 0px !important; }
+.cal-name { font-size: 12px !important; border-radius: 0px !important; }
 .cal-none { color: #ccc !important; }
 
 /* multiselect タグ：白抜き */
