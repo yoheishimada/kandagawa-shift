@@ -43,7 +43,7 @@ BASE_FEATURES = [
 CYCLIC_FEATURES = ["month_sin", "month_cos", "weekday_sin", "weekday_cos", "week_sin", "week_cos"]
 ALL_FEATURES = BASE_FEATURES + CYCLIC_FEATURES
 
-MIN_SALES_DAYS = 30
+MIN_SALES_DAYS = 10
 QUANTILES = {"bear": 0.25, "normal": 0.50, "bull": 0.75}
 
 # 二次加工品：当日焼きパンにクリーム等を追加する商品
@@ -170,7 +170,7 @@ def main():
     product_models = {}
     for i, product in enumerate(target_products):
         X, y, w = records_to_xy(records, f"qty_{product}")
-        if len(X) < 50:
+        if len(X) < MIN_SALES_DAYS:
             continue
         product_models[product] = train_single_model(X, y, w)
         if (i + 1) % 20 == 0:
