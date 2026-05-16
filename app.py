@@ -307,24 +307,31 @@ CATEGORY_GROUPS = [
         "照り焼きチキンサンド", "照り焼きチキンのサンドイッチ",
         "スモークチキンとたまご", "プチサンドセット",
     ]),
-    ("二次製品他", [
+    ("リベイク二次製品", [
         "クロックムッシュ", "タルティーヌ", "フレンチトースト",
         "ニース風ホット", "カリカリハニー", "明太フランス",
-        "ピザトースト", "あんこ塩ぱん", "ミルククリーム",
-        "いちご練乳スティック", "マロンクリーム",
-        "本日のトースト", "本日のフレンチトースト",
+        "ピザトースト", "本日のトースト", "本日のフレンチトースト",
         "ナンテールのトースト", "ナンテールトースト",
         "バゲットのフレンチトースト", "きのこクリームのバゲットトースト",
+        "カリカリハニーバタートースト",
+    ]),
+    ("フィリング二次製品", [
+        "あんこ塩ぱん", "あんこ塩パン",
+        "ミルククリーム", "マロンクリーム",
+        "いちご練乳スティック",
+        "プレーンプチ（クリーム", "チョコチッププチ（クリーム", "レーズンプチ（クリーム",
     ]),
 ]
 
 
-SECONDARY_CATEGORIES = {"二次製品他"}
+SECONDARY_CATEGORIES = {"リベイク二次製品", "フィリング二次製品"}
+REBAKE_CATEGORIES    = {"リベイク二次製品"}
+FILLING_CATEGORIES   = {"フィリング二次製品"}
 SANDWICH_CATEGORIES  = {"サンドイッチ・パニーノ"}
 
-# 二次加工品：当日焼きパンにクリーム等を追加して販売する商品
-# 生産数は元のパンに依存するため、生産表での個別予測は不要
-SECONDARY_PRODUCTS = {
+# フィリング二次製品：当日焼いたパンにあんこ・クリーム等を詰める商品
+# 生産数はベースパン（塩パン・プチ等）に含まれる
+FILLING_PRODUCTS = {
     "あんこ塩ぱん",
     "あんこ塩パン",
     "いちご練乳スティック",
@@ -334,6 +341,16 @@ SECONDARY_PRODUCTS = {
     "プレーンプチ（レモンクリーム入り）",
     "チョコチッププチ（クリーム入）",
     "レーズンプチ（クリーム入り）",
+}
+
+# リベイク二次製品・フィリング二次製品の統合セット（学習除外用）
+SECONDARY_PRODUCTS = FILLING_PRODUCTS | {
+    # リベイク系（前日ロスから製造するため個別予測不要）
+    "クロックムッシュ", "タルティーヌ", "フレンチトースト",
+    "ニース風ホット", "カリカリハニー", "明太フランス",
+    "ピザトースト", "本日のトースト", "本日のフレンチトースト",
+    "ナンテールトースト", "バゲットのフレンチトースト",
+    "きのこクリームのバゲットトースト",
 }
 
 # 食パン1斤→2斤 統合マッピング
@@ -367,10 +384,16 @@ def categorize_product(name):
     return "その他"
 
 
-def is_secondary(name):
-    # SECONDARY_PRODUCTS セット（クリームプチ系を含む）または二次製品カテゴリに属する
-    return name in SECONDARY_PRODUCTS or categorize_product(name) in SECONDARY_CATEGORIES
+def is_filling(name):
+    """フィリング二次製品（ベースパンに含む）"""
+    return name in FILLING_PRODUCTS or categorize_product(name) in FILLING_CATEGORIES
 
+def is_rebake(name):
+    """リベイク二次製品（前日ロスから製造・AI予測表示）"""
+    return categorize_product(name) in REBAKE_CATEGORIES
+
+def is_secondary(name):
+    return is_filling(name) or is_rebake(name)
 
 def is_sandwich(name):
     return categorize_product(name) in SANDWICH_CATEGORIES
@@ -821,10 +844,11 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
 
         bread_products     = {}
         sandwich_products  = {}
-        secondary_products = {}
+        rebake_products    = {}
+        filling_products_d = {}
         bread_excl    = 0.0
         sandwich_excl = 0.0
-        secondary_excl = 0.0
+        rebake_excl   = 0.0
 
         for product, model in models["product_models"].items():
             if product not in lineup_set:
@@ -848,10 +872,16 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
 
             qty_buf = int(np.ceil(qty * (1 + buffer_pct / 100)))
             price = latest_prices.get(product, 0)
-            if is_secondary(product):
+            if is_filling(product):
+                # フィリング二次製品：売上はパン類に含める、製造数はベースパン側で管理
                 if qty_buf > 0:
-                    secondary_products[product] = qty_buf
-                secondary_excl += qty * price
+                    filling_products_d[product] = qty_buf
+                bread_excl += qty * price
+            elif is_rebake(product):
+                # リベイク二次製品：AI予測で個数表示
+                if qty_buf > 0:
+                    rebake_products[product] = qty_buf
+                rebake_excl += qty * price
             elif is_sandwich(product):
                 if qty_buf > 0:
                     sandwich_products[product] = qty_buf
@@ -900,12 +930,13 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
             "is_waseda_holiday": in_period(dt_str, WASEDA_HOLIDAYS),
             "bread_sales":     int(bread_excl * 1.08),
             "sandwich_sales":  int(sandwich_excl * 1.08),
-            "secondary_sales": int(secondary_excl * 1.08),
-            "predicted_sales": int((bread_excl + sandwich_excl + secondary_excl) * 1.08),
+            "rebake_sales":    int(rebake_excl * 1.08),
+            "predicted_sales": int((bread_excl + sandwich_excl + rebake_excl) * 1.08),
             "bread_products":     bread_products,
             "sandwich_products":  sandwich_products,
-            "secondary_products": secondary_products,
-            "products": {**bread_products, **sandwich_products, **secondary_products},
+            "rebake_products":    rebake_products,
+            "secondary_products": {**filling_products_d, **rebake_products},
+            "products": {**bread_products, **sandwich_products, **rebake_products, **filling_products_d},
             "temp_max": w.get("temp_max"),
             "rain_lunch": w.get("rain_lunch_total", 0),
             "rain_evening": w.get("rain_evening_total", 0),
@@ -1159,8 +1190,8 @@ def build_product_table(products_list, results, date_cols, key_field="products",
             for r in results:
                 qty = r[key_field].get(p, 0)
                 if p in SECONDARY_PRODUCTS:
-                    # 二次加工品は数量ではなく「元パン依存」と表示
-                    cells += '<td style="color:#9a8070;font-size:0.8rem">－</td>'
+                    # 二次加工品はベースパンの生産数に含まれる
+                    cells += '<td style="color:#9a8070;font-size:0.72rem;letter-spacing:-0.01em">ベースパンに含む</td>'
                 else:
                     color = "#1a1a1a" if qty >= 20 else "#555" if qty >= 10 else "#999"
                     cells += f'<td style="color:{color};font-weight:{"600" if qty >= 20 else "400"}">{int(qty) if qty else "—"}</td>'
@@ -1198,6 +1229,7 @@ bread_products_all    = sort_by_sheet(set(
     p for r in results for p in r["bread_products"]
 ))
 sandwich_products_all = sort_by_sheet(set(p for r in results for p in r["sandwich_products"]))
+rebake_products_all   = sort_by_sheet(set(p for r in results for p in r["rebake_products"]))
 secondary_products_all= sort_by_sheet(set(p for r in results for p in r["secondary_products"]))
 
 # ── CSV（全カテゴリ合計）──
@@ -1205,7 +1237,7 @@ rows_for_csv = []
 for plist, key in [
     (bread_products_all,    "bread_products"),
     (sandwich_products_all, "sandwich_products"),
-    (secondary_products_all,"secondary_products"),
+    (rebake_products_all,   "rebake_products"),
 ]:
     for p in plist:
         cat = categorize_product(p)
@@ -1270,37 +1302,95 @@ if sand_html:
 elif not filtered_sand:
     st.caption("サンドイッチは前日ラインナップに含まれていません")
 
-# ── 二次製品計画 ─────────────────────────────────────────────
-st.markdown('<div class="section-header">🔥 二次製品（リベイク）計画</div>', unsafe_allow_html=True)
+# ── リベイク二次製品計画 ──────────────────────────────────────
+st.markdown('<div class="section-header">🔥 リベイク二次製品計画</div>', unsafe_allow_html=True)
 
-sec_weekly = sum(r["secondary_sales"] for r in results)
-sec_daily_avg = sec_weekly // 7
+rebake_weekly = sum(r["rebake_sales"] for r in results)
+rebake_daily_avg = rebake_weekly // 7
 st.markdown(
     f'<div style="font-size:0.8rem;color:#aaa;margin-bottom:0.8rem;letter-spacing:0.02em">'
-    f'週合計: <strong style="color:#1a1a1a">¥{sec_weekly:,}</strong>'
-    f'　日平均: <strong style="color:#1a1a1a">¥{sec_daily_avg:,}</strong></div>',
+    f'週合計: <strong style="color:#1a1a1a">¥{rebake_weekly:,}</strong>'
+    f'　日平均: <strong style="color:#1a1a1a">¥{rebake_daily_avg:,}</strong></div>',
     unsafe_allow_html=True,
 )
 
-filtered_sec = [p for p in secondary_products_all if not search or search in p]
-sec_html = build_product_table(filtered_sec, results, date_cols, "secondary_products", sheet_stats)
-if sec_html:
-    st.markdown(sec_html, unsafe_allow_html=True)
-elif not filtered_sec:
-    st.caption("二次製品は前日ラインナップに含まれていません")
+filtered_rebake = [p for p in rebake_products_all if not search or search in p]
+rebake_html = build_product_table(filtered_rebake, results, date_cols, "rebake_products", sheet_stats)
+if rebake_html:
+    st.markdown(rebake_html, unsafe_allow_html=True)
+elif not filtered_rebake:
+    st.caption("リベイク二次製品は前日ラインナップに含まれていません")
 
-# 合計サマリー
-total_weekly = bread_weekly + sand_weekly + sec_weekly
-st.markdown(
-    f'<div style="margin-top:1.4rem;padding:1rem 1.4rem;background:#fff;border:1px solid #e8e4de;'
-    f'border-radius:10px;">'
-    f'<div style="font-size:0.66rem;color:#aaa;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:0.3rem">週合計売上（税込）</div>'
-    f'<div style="font-size:1.6rem;font-weight:700;color:#1a1a1a;letter-spacing:-0.02em">¥{total_weekly:,}</div>'
-    f'<div style="font-size:0.75rem;color:#bbb;margin-top:0.25rem">'
-    f'パン ¥{bread_weekly:,} ／ サンド ¥{sand_weekly:,} ／ 二次製品 ¥{sec_weekly:,}</div>'
-    f'</div>',
-    unsafe_allow_html=True,
+# ── 週合計サマリー ＋ 積み上げ棒グラフ ──────────────────────────
+total_weekly = bread_weekly + sand_weekly + rebake_weekly
+st.markdown('<div class="section-header">📈 週間売上予測サマリー</div>', unsafe_allow_html=True)
+
+# 数値カード
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.markdown(
+        f'<div style="padding:0.9rem 1rem;background:#fff;border:1px solid #e8e4de;border-radius:8px;">'
+        f'<div style="font-size:0.6rem;color:#aaa;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">🍞 パン類</div>'
+        f'<div style="font-size:1.25rem;font-weight:700;color:#1a1a1a">¥{bread_weekly:,}</div>'
+        f'<div style="font-size:0.7rem;color:#bbb">日平均 ¥{bread_weekly//7:,}</div></div>',
+        unsafe_allow_html=True,
+    )
+with col2:
+    st.markdown(
+        f'<div style="padding:0.9rem 1rem;background:#fff;border:1px solid #e8e4de;border-radius:8px;">'
+        f'<div style="font-size:0.6rem;color:#aaa;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">🔥 リベイク</div>'
+        f'<div style="font-size:1.25rem;font-weight:700;color:#1a1a1a">¥{rebake_weekly:,}</div>'
+        f'<div style="font-size:0.7rem;color:#bbb">日平均 ¥{rebake_weekly//7:,}</div></div>',
+        unsafe_allow_html=True,
+    )
+with col3:
+    st.markdown(
+        f'<div style="padding:0.9rem 1rem;background:#fff;border:1px solid #e8e4de;border-radius:8px;">'
+        f'<div style="font-size:0.6rem;color:#aaa;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">🥪 サンドイッチ</div>'
+        f'<div style="font-size:1.25rem;font-weight:700;color:#1a1a1a">¥{sand_weekly:,}</div>'
+        f'<div style="font-size:0.7rem;color:#bbb">日平均 ¥{sand_weekly//7:,}</div></div>',
+        unsafe_allow_html=True,
+    )
+with col4:
+    st.markdown(
+        f'<div style="padding:0.9rem 1rem;background:#1a1a1a;border-radius:8px;">'
+        f'<div style="font-size:0.6rem;color:#888;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">合計</div>'
+        f'<div style="font-size:1.25rem;font-weight:700;color:#fff">¥{total_weekly:,}</div>'
+        f'<div style="font-size:0.7rem;color:#666">日平均 ¥{total_weekly//7:,}</div></div>',
+        unsafe_allow_html=True,
+    )
+
+# 積み上げ棒グラフ
+import plotly.graph_objects as go
+chart_dates = [f"{r['date'][5:]}({r['weekday']})" for r in results]
+fig = go.Figure()
+fig.add_trace(go.Bar(
+    name="🍞 パン類", x=chart_dates,
+    y=[r["bread_sales"] for r in results],
+    marker_color="#1a1a1a",
+))
+fig.add_trace(go.Bar(
+    name="🔥 リベイク", x=chart_dates,
+    y=[r["rebake_sales"] for r in results],
+    marker_color="#c0392b",
+))
+fig.add_trace(go.Bar(
+    name="🥪 サンドイッチ", x=chart_dates,
+    y=[r["sandwich_sales"] for r in results],
+    marker_color="#7f8c8d",
+))
+fig.update_layout(
+    barmode="stack",
+    plot_bgcolor="#f5f5f3",
+    paper_bgcolor="#f5f5f3",
+    font=dict(family="Noto Sans JP, sans-serif", size=12, color="#1a1a1a"),
+    margin=dict(l=10, r=10, t=20, b=10),
+    height=300,
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    yaxis=dict(tickformat="¥,.0f", gridcolor="#e8e4de"),
+    xaxis=dict(gridcolor="#e8e4de"),
 )
+st.plotly_chart(fig, use_container_width=True)
 
 # ── 実績分析レポート ──────────────────────────────────────────
 st.markdown('<div class="section-header">📊 実績分析レポート</div>', unsafe_allow_html=True)
