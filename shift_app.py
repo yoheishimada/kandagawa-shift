@@ -485,6 +485,106 @@ def build_admin_ranking(df, date_cols):
     rank_df = pd.DataFrame(stats).T.sort_values('合計日数', ascending=False).astype(int)
     return rank_df
 
+def generate_staff_manual_pdf():
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.lib import colors
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+
+    pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=(148*mm, 210*mm),
+                            leftMargin=14*mm, rightMargin=14*mm,
+                            topMargin=12*mm, bottomMargin=12*mm)
+
+    F = 'HeiseiKakuGo-W5'
+    BLACK = colors.HexColor('#1a1a1a')
+    GRAY  = colors.HexColor('#888888')
+    LIGHT = colors.HexColor('#f0ece6')
+    ACCENT= colors.HexColor('#4a90d9')
+
+    def s(name, size, bold=False, color=BLACK, align=0, leading=None):
+        return ParagraphStyle(name, fontName=F, fontSize=size,
+                              textColor=color, alignment=align,
+                              leading=leading or size*1.5)
+
+    elems = []
+
+    # タイトル
+    elems.append(Spacer(1, 4*mm))
+    elems.append(Paragraph('KANDAGAWA BAKERY', s('sub', 7, color=GRAY, align=1)))
+    elems.append(Spacer(1, 1*mm))
+    elems.append(Paragraph('シフト申請マニュアル', s('title', 16, align=1)))
+    elems.append(Spacer(1, 2*mm))
+    elems.append(HRFlowable(width='100%', thickness=1, color=BLACK))
+    elems.append(Spacer(1, 6*mm))
+
+    # フロー図
+    elems.append(Paragraph('申請の流れ', s('h', 10, color=GRAY)))
+    elems.append(Spacer(1, 3*mm))
+
+    flow_steps = [
+        ('毎月25日', ACCENT),
+        ('LINE WORKSに吉田さんからメッセージが届く', BLACK),
+        ('メッセージ内のリンクをタップ', BLACK),
+        ('Googleフォームでシフト希望を入力・送信', BLACK),
+        ('完了！', colors.HexColor('#10AC84')),
+    ]
+    box_style = ParagraphStyle('box', fontName=F, fontSize=9, textColor=colors.white,
+                               alignment=1, leading=13)
+    arrow_style = s('arrow', 11, color=GRAY, align=1)
+
+    from reportlab.platypus import Table, TableStyle
+    for i, (text, bg) in enumerate(flow_steps):
+        tbl = Table([[Paragraph(text, ParagraphStyle('b', fontName=F, fontSize=9,
+                                textColor=colors.white, alignment=1, leading=13))]],
+                    colWidths=[100*mm], rowHeights=[10*mm])
+        tbl.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), bg),
+            ('VALIGN',     (0,0), (-1,-1), 'MIDDLE'),
+            ('ROUNDEDCORNERS', [4]),
+        ]))
+        elems.append(tbl)
+        if i < len(flow_steps) - 1:
+            elems.append(Paragraph('↓', arrow_style))
+    elems.append(Spacer(1, 6*mm))
+    elems.append(HRFlowable(width='100%', thickness=0.5, color=LIGHT))
+    elems.append(Spacer(1, 4*mm))
+
+    # フォーム入力方法
+    elems.append(Paragraph('フォームの入力方法', s('h2', 10, color=GRAY)))
+    elems.append(Spacer(1, 3*mm))
+    steps = [
+        ('① 名前を選ぶ', 'リストから自分の名前を選んでください。'),
+        ('② シフトにチェックを入れる', '早番（10〜15時）・遅番（15〜19時）、入れる日にチェック。両方入れる日は両方チェック。'),
+        ('③ 送信する', '一番下の「送信」ボタンを押して完了。'),
+    ]
+    for title, body in steps:
+        elems.append(Paragraph(title, s('st', 9, color=BLACK)))
+        elems.append(Paragraph(body,  s('sb', 8, color=GRAY, leading=13)))
+        elems.append(Spacer(1, 3*mm))
+
+    elems.append(HRFlowable(width='100%', thickness=0.5, color=LIGHT))
+    elems.append(Spacer(1, 4*mm))
+
+    # 再申請
+    elems.append(Paragraph('再申請を求められたとき', s('h3', 10, color=GRAY)))
+    elems.append(Spacer(1, 2*mm))
+    elems.append(Paragraph(
+        '再申請は「上書き」ではなく「追加」になります。最初に申請した内容はそのまま残るので、新たに入れる日だけチェックして送信してください。',
+        s('rb', 8, color=BLACK, leading=14)))
+    elems.append(Spacer(1, 6*mm))
+
+    # 問い合わせ
+    elems.append(HRFlowable(width='100%', thickness=0.5, color=LIGHT))
+    elems.append(Spacer(1, 4*mm))
+    elems.append(Paragraph('困ったときは吉田さんに連絡してください。', s('q', 8, color=GRAY, align=1)))
+
+    doc.build(elems)
+    return buf.getvalue()
+
 def generate_shift_pdf(daily_shifts, year, month, staff_colors=None):
     if staff_colors is None:
         staff_colors = {}
@@ -822,14 +922,26 @@ else:
             st.success('全日程・全シフトに1名以上入っています！')
 
         st.markdown('---')
-        st.subheader('シフト表PDFダウンロード')
-        pdf_bytes = generate_shift_pdf(daily_shifts, year, month, staff_colors)
-        st.download_button(
-            label=f'{year}年{month}月 シフト表をPDFでダウンロード',
-            data=pdf_bytes,
-            file_name=f'shift_{year}_{month:02d}.pdf',
-            mime='application/pdf',
-        )
+        st.subheader('PDFダウンロード')
+        col_pdf1, col_pdf2 = st.columns(2)
+        with col_pdf1:
+            pdf_bytes = generate_shift_pdf(daily_shifts, year, month, staff_colors)
+            st.download_button(
+                label=f'{year}年{month}月 シフト表',
+                data=pdf_bytes,
+                file_name=f'shift_{year}_{month:02d}.pdf',
+                mime='application/pdf',
+                use_container_width=True,
+            )
+        with col_pdf2:
+            manual_pdf = generate_staff_manual_pdf()
+            st.download_button(
+                label='スタッフ用マニュアル',
+                data=manual_pdf,
+                file_name='staff_manual.pdf',
+                mime='application/pdf',
+                use_container_width=True,
+            )
 
         st.markdown('---')
         st.subheader('スタッフ出勤ランキング')
