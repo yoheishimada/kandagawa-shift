@@ -95,6 +95,7 @@ def load_data():
     relevant_data = [row[last_name_idx:] for row in values[1:]]
     df = pd.DataFrame(relevant_data, columns=relevant_headers)
     df = df[df['お名前'] != '']  # 名前が空の行を除外
+    df = df.drop_duplicates(subset=['お名前'], keep='last')  # 再申請時は最新を使用
     return df if not df.empty else None
 
 @st.cache_data(ttl=300)
