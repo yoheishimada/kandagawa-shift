@@ -173,7 +173,7 @@ st.markdown("""
 # サイドバー：管理者ログイン
 with st.sidebar:
     st.header('管理者メニュー')
-    admin_pw = st.text_input('管理者パスワード', type='password')
+    admin_pw = st.text_input('管理者パスワード')
     is_admin = (admin_pw == ADMIN_PASSWORD)
     if admin_pw and not is_admin:
         st.error('パスワードが違います')
