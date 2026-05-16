@@ -23,6 +23,133 @@ ADMIN_PASSWORD = 'Kandagawa0222'
 
 st.set_page_config(page_title='神田川ベーカリー シフト表', layout='wide')
 
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+JP:wght@300;400;700&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Inter', 'Noto Sans JP', sans-serif;
+}
+
+/* 背景 */
+.stApp { background-color: #0a0a0a; }
+
+/* タイトル */
+h1 {
+    font-size: 2.4rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid #222 !important;
+    padding-bottom: 0.5rem !important;
+}
+h2 {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    color: #c8ff00 !important;
+    margin-top: 2rem !important;
+}
+h3 {
+    font-size: 0.95rem !important;
+    font-weight: 400 !important;
+    color: #888 !important;
+    letter-spacing: 0.05em !important;
+}
+
+/* サイドバー */
+[data-testid="stSidebar"] {
+    background-color: #0f0f0f !important;
+    border-right: 1px solid #1e1e1e !important;
+}
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    color: #ffffff !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+/* ボタン */
+.stButton > button {
+    background-color: #c8ff00 !important;
+    color: #0a0a0a !important;
+    border: none !important;
+    border-radius: 2px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+    padding: 0.5rem 1.5rem !important;
+    transition: all 0.2s ease !important;
+}
+.stButton > button:hover {
+    background-color: #ffffff !important;
+    transform: translateY(-1px) !important;
+}
+
+/* テキストエリア・入力 */
+.stTextArea textarea, .stTextInput input {
+    background-color: #141414 !important;
+    border: 1px solid #2a2a2a !important;
+    border-radius: 2px !important;
+    color: #f0f0f0 !important;
+}
+
+/* multiselect・selectbox */
+.stMultiSelect > div, .stSelectbox > div {
+    background-color: #141414 !important;
+    border-color: #2a2a2a !important;
+}
+
+/* 成功・警告・エラー */
+.stSuccess {
+    background-color: #0f2a00 !important;
+    border-left: 3px solid #c8ff00 !important;
+    border-radius: 2px !important;
+}
+.stWarning {
+    background-color: #2a1f00 !important;
+    border-left: 3px solid #ffaa00 !important;
+    border-radius: 2px !important;
+}
+.stError {
+    background-color: #2a0000 !important;
+    border-left: 3px solid #ff4444 !important;
+    border-radius: 2px !important;
+}
+
+/* dataframe */
+.stDataFrame {
+    border: 1px solid #1e1e1e !important;
+    border-radius: 2px !important;
+}
+
+/* カレンダー上書き */
+.cal-table { background: #0a0a0a !important; }
+.cal-header { background: #141414 !important; color: #c8ff00 !important;
+              border-bottom: 2px solid #c8ff00 !important; letter-spacing: 0.1em; }
+.cal-cell { border-color: #1e1e1e !important; background: #0d0d0d; }
+.cal-empty { background: #080808 !important; }
+.cal-date { color: #ffffff !important; font-size: 14px !important; font-weight: 600 !important; }
+.cal-section { color: #555 !important; border-top-color: #1e1e1e !important;
+               font-size: 9px !important; letter-spacing: 0.1em; text-transform: uppercase; }
+.cal-name { font-size: 10px !important; border-radius: 1px !important; }
+.cal-none { color: #2a2a2a !important; }
+
+/* セパレーター */
+hr { border-color: #1e1e1e !important; }
+
+/* caption */
+.stCaption { color: #555 !important; font-size: 0.75rem !important; letter-spacing: 0.05em; }
+
+/* progress */
+.stProgress > div > div { background-color: #c8ff00 !important; }
+
+/* ログインページ */
+.stTextInput > label { color: #888 !important; font-size: 0.8rem !important; letter-spacing: 0.1em; }
+</style>
+""", unsafe_allow_html=True)
+
 # --- パスワード保護 ---
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
@@ -40,7 +167,13 @@ if not st.session_state.authenticated:
     st.stop()
 
 # --- 認証済み以降の処理 ---
-st.title('神田川ベーカリー シフト表')
+st.markdown("""
+<div style='padding: 2rem 0 1rem 0;'>
+  <div style='font-size:0.7rem;letter-spacing:0.3em;color:#555;text-transform:uppercase;margin-bottom:0.5rem;'>Kandagawa Bakery</div>
+  <h1 style='font-size:2.8rem;font-weight:700;letter-spacing:-0.03em;color:#fff;margin:0;border:none;padding:0;'>シフト表</h1>
+  <div style='width:40px;height:2px;background:#c8ff00;margin-top:0.8rem;'></div>
+</div>
+""", unsafe_allow_html=True)
 
 # サイドバー：管理者ログイン
 with st.sidebar:
