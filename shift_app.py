@@ -777,7 +777,7 @@ else:
                 default=all_staff,
             )
             lw_message = st.text_area('送信メッセージ（編集可）', default_msg, height=180)
-            _, col_btn1, col_btn2, _ = st.columns([0.4, 1.2, 1.2, 2])
+            _, col_btn1, col_btn2 = st.columns([3, 1.2, 1.2])
             with col_btn1:
                 if st.button(f'選択した{len(selected_staff)}名に送信'):
                     if not selected_staff:
