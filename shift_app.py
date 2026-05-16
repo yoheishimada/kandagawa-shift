@@ -170,6 +170,8 @@ with st.sidebar:
     if st.button('ログアウト'):
         st.session_state.authenticated = False
         st.rerun()
+    st.markdown('---')
+    st.markdown('[管理者マニュアルを見る](https://github.com/yoheishimada/kandagawa-shift/blob/main/%E7%AE%A1%E7%90%86%E8%80%85%E3%83%9E%E3%83%8B%E3%83%A5%E3%82%A2%E3%83%AB.md)')
 
 @st.cache_data(ttl=300)
 def load_data():
