@@ -525,6 +525,16 @@ def generate_staff_manual_pdf():
     elems.append(HRFlowable(width='100%', thickness=1.5, color=BLACK))
     elems.append(Spacer(1, 5*mm))
 
+    # ── リード文 ──
+    elems.append(Paragraph(
+        'シフトに入れる日は、できるだけたくさん申請してください。'
+        '「絶対入れる日」だけでなく「たぶん大丈夫」な日も積極的にチェックしてもらえると助かります。'
+        '申請＝確定ではないので、気軽にたくさん入れてください。',
+        ps('lead', 10, BLACK, leading=16)))
+    elems.append(Spacer(1, 5*mm))
+    elems.append(HRFlowable(width='100%', thickness=0.5, color=LGRAY))
+    elems.append(Spacer(1, 5*mm))
+
     # ── フロー図（縦並び・中央寄せ） ──
     elems.append(Paragraph('シフト申請の流れ', ps('lbl', 10, GRAY)))
     elems.append(Spacer(1, 3*mm))
