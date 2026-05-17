@@ -930,6 +930,20 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
             # 売上計算用の原価にも加算（バッファーなしで加算）
             bread_excl += extra_raw * latest_prices.get(base_prod, 0)
 
+        # ── 売上合計はsales_modelsを正として使用（ダブルカウント防止）──
+        # 商品別モデルの合計はカテゴリ比率の按分にのみ使用する
+        sales_pred_excl = max(1.0, sales_models[mode].predict(X)[0]) if sales_models else (
+            bread_excl + sandwich_excl + rebake_excl
+        )
+        total_product_excl = bread_excl + sandwich_excl + rebake_excl
+        if total_product_excl > 0:
+            bread_ratio    = bread_excl    / total_product_excl
+            sandwich_ratio = sandwich_excl / total_product_excl
+            rebake_ratio   = rebake_excl   / total_product_excl
+        else:
+            bread_ratio, sandwich_ratio, rebake_ratio = 1.0, 0.0, 0.0
+
+        predicted_sales_taxed = int(sales_pred_excl * 1.08)
         w = weather.get(dt_str, {})
         results.append({
             "date": dt_str,
@@ -938,10 +952,10 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
             "is_holiday": _jpholiday.is_holiday(d),
             "is_school_holiday": in_period(dt_str, SCHOOL_HOLIDAYS),
             "is_waseda_holiday": in_period(dt_str, WASEDA_HOLIDAYS),
-            "bread_sales":     int(bread_excl * 1.08),
-            "sandwich_sales":  int(sandwich_excl * 1.08),
-            "rebake_sales":    int(rebake_excl * 1.08),
-            "predicted_sales": int((bread_excl + sandwich_excl + rebake_excl) * 1.08),
+            "bread_sales":     int(predicted_sales_taxed * bread_ratio),
+            "sandwich_sales":  int(predicted_sales_taxed * sandwich_ratio),
+            "rebake_sales":    int(predicted_sales_taxed * rebake_ratio),
+            "predicted_sales": predicted_sales_taxed,
             "bread_products":     bread_products,
             "sandwich_products":  sandwich_products,
             "rebake_products":    rebake_products,
