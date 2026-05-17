@@ -1071,11 +1071,11 @@ with st.sidebar:
     st.divider()
 
     # モード選択
-    st.markdown("### 📊 予測モード")
+    st.markdown("### 予測モード")
     mode = st.radio(
         "予測モード選択",
         options=["bull", "normal", "bear"],
-        format_func=lambda x: {"bull": "🔴 強気予測", "normal": "🟢 普通予測", "bear": "🔵 弱気予測"}[x],
+        format_func=lambda x: {"bull": "強気予測", "normal": "普通予測", "bear": "弱気予測"}[x],
         index=1,
         label_visibility="collapsed",
     )
@@ -1083,7 +1083,7 @@ with st.sidebar:
     mode_label = MODE_LABELS[mode]
 
     st.divider()
-    st.markdown("### 🍞 ラインナップ")
+    st.markdown("### ラインナップ")
     lineup = get_lineup(models)
     st.caption(f"基準日: {(date.today() - timedelta(days=1)).isoformat()}")
     st.caption(f"{len(lineup)} 商品")
@@ -1146,14 +1146,14 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
 
     wd_color = "#c0392b" if r["is_weekend"] or r["is_holiday"] else "#2c2520"
     if not weather_available:
-        temp_txt = "🌥️ 天気データなし"
+        temp_txt = "天気データなし"
         rain_txt = "—"
     else:
-        temp_txt = f"🌡{r['temp_max']:.0f}°C" if r["temp_max"] else "🌡—"
+        temp_txt = f"{r['temp_max']:.0f}°C" if r["temp_max"] else "—"
         if r["rain_lunch"] > 0 or r["rain_evening"] > 0:
             rain_txt = f"昼{r['rain_lunch']:.1f}mm 夕{r['rain_evening']:.1f}mm"
         else:
-            rain_txt = "☀️ 晴れ"
+            rain_txt = "晴れ"
 
     # 弱気〜強気の範囲バー
     total_range = max(bull_val - bear_val, 1)
@@ -1169,9 +1169,9 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
         <div class="weekday" style="color:{wd_color}">{r['weekday']}</div>
         <div class="sales-amount">¥{cur_val:,}</div>
         <div style="font-size:0.68rem;margin:0.18rem 0 0.22rem;letter-spacing:0.01em;line-height:1.7">
-            <span style="color:#2c7be5;font-weight:500">🍞 パン</span> <span style="color:#555">¥{bread_val:,}</span><br>
-            <span style="color:#c0392b;font-weight:500">🔥 リベイク</span> <span style="color:#555">¥{rebake_val:,}</span><br>
-            <span style="color:#27ae60;font-weight:500">🥪 サンド</span> <span style="color:#555">¥{sand_val:,}</span>
+            <span style="color:#2c7be5;font-weight:500">パン</span> <span style="color:#555">¥{bread_val:,}</span><br>
+            <span style="color:#c0392b;font-weight:500">リベイク</span> <span style="color:#555">¥{rebake_val:,}</span><br>
+            <span style="color:#27ae60;font-weight:500">サンド</span> <span style="color:#555">¥{sand_val:,}</span>
         </div>
         <div style="margin:0.2rem 0">{''.join(badges)}</div>
         <div class="weather-info">{temp_txt} {rain_txt}</div>
@@ -1197,7 +1197,7 @@ bull_vals  = [r["predicted_sales"] for r in all_results["bull"]]
 fig = go.Figure()
 fig.add_trace(go.Bar(
     x=dates_label, y=normal_vals,
-    name="🟢 普通予測",
+    name="普通予測",
     marker_color="#1a1a1a",
     opacity=0.82,
 ))
@@ -1330,7 +1330,7 @@ with dl_col:
     )
 
 # ── パン製造計画 ──────────────────────────────────────────────
-st.markdown('<div class="section-header">🍞 パン製造計画</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">パン製造計画</div>', unsafe_allow_html=True)
 
 bread_weekly = sum(r["bread_sales"] for r in results)
 bread_daily_avg = bread_weekly // 7
@@ -1347,7 +1347,7 @@ if bread_html:
     st.markdown(bread_html, unsafe_allow_html=True)
 
 # ── サンドイッチ計画 ──────────────────────────────────────────
-st.markdown('<div class="section-header">🥪 サンドイッチ・パニーノ計画</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">サンドイッチ・パニーノ計画</div>', unsafe_allow_html=True)
 
 sand_weekly = sum(r["sandwich_sales"] for r in results)
 sand_daily_avg = sand_weekly // 7
@@ -1366,7 +1366,7 @@ elif not filtered_sand:
     st.caption("サンドイッチは前日ラインナップに含まれていません")
 
 # ── リベイク二次製品計画 ──────────────────────────────────────
-st.markdown('<div class="section-header">🔥 リベイク二次製品計画</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">リベイク二次製品計画</div>', unsafe_allow_html=True)
 
 rebake_weekly = sum(r["rebake_sales"] for r in results)
 rebake_daily_avg = rebake_weekly // 7
@@ -1386,14 +1386,14 @@ elif not filtered_rebake:
 
 # ── 週合計サマリー ＋ 積み上げ棒グラフ ──────────────────────────
 total_weekly = bread_weekly + sand_weekly + rebake_weekly
-st.markdown('<div class="section-header">📈 週間売上予測サマリー</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">週間売上予測サマリー</div>', unsafe_allow_html=True)
 
 # 数値カード
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.markdown(
         f'<div style="padding:0.9rem 1rem;background:#fff;border-left:4px solid #2c7be5;border-top:1px solid #e8e4de;border-right:1px solid #e8e4de;border-bottom:1px solid #e8e4de;border-radius:8px;">'
-        f'<div style="font-size:0.6rem;color:#2c7be5;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">🍞 パン類</div>'
+        f'<div style="font-size:0.6rem;color:#2c7be5;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">パン類</div>'
         f'<div style="font-size:1.25rem;font-weight:700;color:#1a1a1a">¥{bread_weekly:,}</div>'
         f'<div style="font-size:0.7rem;color:#bbb">日平均 ¥{bread_weekly//7:,}</div></div>',
         unsafe_allow_html=True,
@@ -1401,7 +1401,7 @@ with col1:
 with col2:
     st.markdown(
         f'<div style="padding:0.9rem 1rem;background:#fff;border-left:4px solid #c0392b;border-top:1px solid #e8e4de;border-right:1px solid #e8e4de;border-bottom:1px solid #e8e4de;border-radius:8px;">'
-        f'<div style="font-size:0.6rem;color:#c0392b;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">🔥 リベイク</div>'
+        f'<div style="font-size:0.6rem;color:#c0392b;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">リベイク</div>'
         f'<div style="font-size:1.25rem;font-weight:700;color:#1a1a1a">¥{rebake_weekly:,}</div>'
         f'<div style="font-size:0.7rem;color:#bbb">日平均 ¥{rebake_weekly//7:,}</div></div>',
         unsafe_allow_html=True,
@@ -1409,7 +1409,7 @@ with col2:
 with col3:
     st.markdown(
         f'<div style="padding:0.9rem 1rem;background:#fff;border-left:4px solid #27ae60;border-top:1px solid #e8e4de;border-right:1px solid #e8e4de;border-bottom:1px solid #e8e4de;border-radius:8px;">'
-        f'<div style="font-size:0.6rem;color:#27ae60;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">🥪 サンドイッチ</div>'
+        f'<div style="font-size:0.6rem;color:#27ae60;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">サンドイッチ</div>'
         f'<div style="font-size:1.25rem;font-weight:700;color:#1a1a1a">¥{sand_weekly:,}</div>'
         f'<div style="font-size:0.7rem;color:#bbb">日平均 ¥{sand_weekly//7:,}</div></div>',
         unsafe_allow_html=True,
@@ -1428,17 +1428,17 @@ import plotly.graph_objects as go
 chart_dates = [f"{r['date'][5:]}({r['weekday']})" for r in results]
 fig = go.Figure()
 fig.add_trace(go.Bar(
-    name="🍞 パン類", x=chart_dates,
+    name="パン類", x=chart_dates,
     y=[r["bread_sales"] for r in results],
     marker_color="#2c7be5",
 ))
 fig.add_trace(go.Bar(
-    name="🔥 リベイク", x=chart_dates,
+    name="リベイク", x=chart_dates,
     y=[r["rebake_sales"] for r in results],
     marker_color="#c0392b",
 ))
 fig.add_trace(go.Bar(
-    name="🥪 サンドイッチ", x=chart_dates,
+    name="サンドイッチ", x=chart_dates,
     y=[r["sandwich_sales"] for r in results],
     marker_color="#27ae60",
 ))
@@ -1456,7 +1456,7 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 # ── 実績分析レポート ──────────────────────────────────────────
-st.markdown('<div class="section-header">📊 実績分析レポート</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">実績分析レポート</div>', unsafe_allow_html=True)
 
 if sheet_stats:
     # 集計（calibration.pkl または compute_sheet_stats からの統一インターフェース）
