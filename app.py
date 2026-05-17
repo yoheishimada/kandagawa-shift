@@ -77,6 +77,8 @@ html, body, [class*="css"] {
     box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     min-height: 320px; display: flex; flex-direction: column; justify-content: space-between;
 }
+.day-card.saturday { background: #eef6fb !important; border-color: #c5dff0; }
+.day-card.sunday   { background: #fdf0f3 !important; border-color: #f0c8d4; }
 .day-card:hover { border-color: #1a1a1a; box-shadow: 0 4px 16px rgba(0,0,0,0.09); transform: translateY(-2px); }
 .day-card .date-label { font-size: 0.68rem; color: #bbb; letter-spacing: 0.08em; margin-bottom: 0.2rem; }
 .day-card .weekday { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.35rem; color: #1a1a1a; }
@@ -1149,11 +1151,11 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
     weekday_num = date.fromisoformat(r["date"]).weekday()  # 5=土 6=日
     wd_color = "#c0392b" if r["is_weekend"] or r["is_holiday"] else "#2c2520"
     if weekday_num == 5:
-        card_bg = "background:#eef6fb;"   # 土: 水色
+        card_cls = "day-card saturday"
     elif weekday_num == 6:
-        card_bg = "background:#fdf0f3;"   # 日: 薄ピンク
+        card_cls = "day-card sunday"
     else:
-        card_bg = ""
+        card_cls = "day-card"
     if not weather_available:
         temp_txt = "天気データなし"
         rain_txt = "—"
@@ -1173,7 +1175,7 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
     rebake_val = r["rebake_sales"]
 
     card_html = f"""
-    <div class="day-card" style="{card_bg}">
+    <div class="{card_cls}">
         <div class="date-label">{r['date'][5:]}</div>
         <div class="weekday" style="color:{wd_color}">{r['weekday']}</div>
         <div class="sales-amount">¥{cur_val:,}</div>
@@ -1209,12 +1211,19 @@ bull_vals  = [r["predicted_sales"] for r in all_results["bull"]]
 
 fig = go.Figure()
 fig.add_trace(go.Bar(
-    x=dates_label, y=normal_vals,
-    name="普通予測",
-    marker_color="#1a1a1a",
-    opacity=0.82,
+    x=dates_label, y=[r["bread_sales"] for r in results],
+    name="パン類", marker_color="#2c7be5",
+))
+fig.add_trace(go.Bar(
+    x=dates_label, y=[r["rebake_sales"] for r in results],
+    name="リベイク", marker_color="#c0392b",
+))
+fig.add_trace(go.Bar(
+    x=dates_label, y=[r["sandwich_sales"] for r in results],
+    name="サンドイッチ", marker_color="#27ae60",
 ))
 fig.update_layout(
+    barmode="stack",
     paper_bgcolor="#ffffff", plot_bgcolor="#fafaf8",
     font=dict(color="#888", family="Inter, Noto Sans JP", size=12),
     height=360, margin=dict(t=20, b=20, l=10, r=10),
