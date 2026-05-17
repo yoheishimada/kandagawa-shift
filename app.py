@@ -1281,6 +1281,8 @@ fig.add_trace(go.Bar(
 ))
 fig.update_layout(
     barmode="group",
+    bargap=0.35,
+    bargroupgap=0.08,
     paper_bgcolor="#ffffff", plot_bgcolor="#fafaf8",
     font=dict(color="#888", family="Inter, Noto Sans JP", size=12),
     height=320, margin=dict(t=20, b=20, l=10, r=10),
