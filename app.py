@@ -39,7 +39,6 @@ def check_password():
             if password == "Kandagawa0222":
                 st.session_state.authenticated = True
                 st.session_state.is_admin = True
-                st.session_state.is_admin = False
                 st.rerun()
             else:
                 st.error("パスワードが違います")
