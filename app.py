@@ -154,13 +154,13 @@ html, body, [class*="css"] {
 
 /* ── ボタン ── */
 .stButton button, .stDownloadButton button {
-    background: #1a1a1a !important; border: none !important;
-    color: #ffffff !important; border-radius: 6px !important;
+    background: #ffffff !important; border: 1px solid #d0ccc8 !important;
+    color: #1a1a1a !important; border-radius: 6px !important;
     font-size: 0.82rem !important; font-weight: 500 !important;
-    letter-spacing: 0.04em !important; transition: opacity 0.2s !important;
+    letter-spacing: 0.04em !important; transition: all 0.2s !important;
 }
 .stButton button:hover, .stDownloadButton button:hover {
-    opacity: 0.72 !important; background: #1a1a1a !important;
+    background: #f5f5f3 !important; border-color: #aaa !important;
 }
 
 /* ── その他 ── */
@@ -1394,7 +1394,7 @@ with search_col:
     search = st.text_input("商品名で絞り込み", placeholder="🔍 商品名で絞り込み...", label_visibility="collapsed")
 with dl_col:
     st.download_button(
-        "📥 CSV",
+        "CSV ダウンロード",
         data=df_csv.to_csv(index=False, encoding="utf-8-sig") if not df_csv.empty else "",
         file_name=f"製造数_{start_date}_{mode_label}.csv",
         mime="text/csv",
