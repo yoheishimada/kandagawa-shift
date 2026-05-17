@@ -253,6 +253,36 @@ def heat_features(temp_max: float) -> dict:
         "is_very_hot":  int(temp_max >= 35),
     }
 
+
+def post_holiday_features(dt: date) -> dict:
+    """3日以上連続した祝日の翌1〜7日間に立つフラグ。
+    GW・年末年始・シルバーウィーク明けの売上跳ね上がりを明示的にモデルに伝える。
+    ※当日が祝日の場合・土日は0（店は通常営業）。
+    """
+    _ZERO = {"is_post_long_holiday": 0, "days_after_long_holiday": 0}
+    if _jpholiday.is_holiday(dt):
+        return _ZERO
+    streak = 0
+    streak_end = None
+    for look_back in range(1, 31):
+        check = dt - timedelta(days=look_back)
+        if _jpholiday.is_holiday(check):
+            if streak == 0:
+                streak_end = check
+            streak += 1
+        else:
+            if streak >= 3:
+                days_after = (dt - streak_end).days
+                if 1 <= days_after <= 7:
+                    return {
+                        "is_post_long_holiday":    1,
+                        "days_after_long_holiday": days_after,
+                    }
+                break
+            streak = 0
+    return _ZERO
+
+
 # スプレッドシート構成に合わせたカテゴリグループ（EXCEL_PRODUCT_ORDERの並び順に対応）
 CATEGORY_GROUPS = [
     ("山食生地", [
@@ -856,6 +886,7 @@ def make_features(dt_str, weather, prev_close_min=1020, lag_feats=None):
     sk = sakura_features(d)
     ts = tsuyu_features(d)
     ht = heat_features(w.get("temp_max", 20))
+    ph = post_holiday_features(d)
     lf = lag_feats if lag_feats is not None else _LAG_DEFAULTS
     return [
         d.year, m, d.day, wd, woy,
@@ -875,6 +906,8 @@ def make_features(dt_str, weather, prev_close_min=1020, lag_feats=None):
         lf["sales_lag_7"], lf["sales_lag_28"], lf["sales_lag_365"],
         lf["sales_ma7"], lf["sales_ma28"],
         lf["yoy_ratio"], lf["momentum"],
+        # 連休明け特徴量
+        ph["is_post_long_holiday"], ph["days_after_long_holiday"],
         np.sin(2*np.pi*m/12), np.cos(2*np.pi*m/12),
         np.sin(2*np.pi*wd/7), np.cos(2*np.pi*wd/7),
         np.sin(2*np.pi*woy/52), np.cos(2*np.pi*woy/52),

@@ -144,6 +144,38 @@ def heat_features(temp_max: float) -> dict:
     }
 
 
+def post_holiday_features(dt: date) -> dict:
+    """3日以上連続した祝日の翌1〜7日間に立つフラグ。
+    GW・年末年始・シルバーウィーク明けの売上跳ね上がりを明示的にモデルに伝える。
+    ※当日が祝日の場合・土日は0（店は通常営業）。
+    """
+    _ZERO = {"is_post_long_holiday": 0, "days_after_long_holiday": 0}
+    # 当日が祝日なら連休中なのでフラグなし
+    if _jpholiday.is_holiday(dt):
+        return _ZERO
+    # 過去30日を遡り、直近の「3日以上連続した国民の祝日」の終了日を探す
+    streak = 0
+    streak_end = None
+    for look_back in range(1, 31):
+        check = dt - timedelta(days=look_back)
+        if _jpholiday.is_holiday(check):
+            if streak == 0:
+                streak_end = check  # 連休の最終日（一番直近の祝日）
+            streak += 1
+        else:
+            if streak >= 3:
+                # 3日以上の連休が見つかった → 今日は何日後か
+                days_after = (dt - streak_end).days
+                if 1 <= days_after <= 7:
+                    return {
+                        "is_post_long_holiday":    1,
+                        "days_after_long_holiday": days_after,
+                    }
+                break  # 7日より古い連休は無視
+            streak = 0  # 短い連休はリセット
+    return _ZERO
+
+
 def _build_national_holidays(from_year=2021, to_year=2027):
     holidays = set()
     d = date(from_year, 1, 1)
@@ -411,6 +443,7 @@ def build_dataset():
             **sakura_features(d),
             **tsuyu_features(d),
             **heat_features(w.get("temp_max", 20)),
+            **post_holiday_features(d),
         }
 
         for product, qty in daily_products[dt_str].items():

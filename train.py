@@ -38,6 +38,9 @@ BASE_FEATURES = [
     "sales_ma28",     # 直近28日移動平均
     "yoy_ratio",      # 前年比（成長>1.0 / 衰退<1.0）
     "momentum",       # 直近の勢い（加速>1.0 / 減速<1.0）
+    # 連休明け特徴量：GW・年末年始明けの売上跳ね上がりを明示的に捉える
+    "is_post_long_holiday",    # 3日以上連続祝日の翌1〜7日: 1
+    "days_after_long_holiday", # 翌1日=1, 翌2日=2 … 翌7日=7（それ以外=0）
 ]
 
 CYCLIC_FEATURES = ["month_sin", "month_cos", "weekday_sin", "weekday_cos", "week_sin", "week_cos"]
