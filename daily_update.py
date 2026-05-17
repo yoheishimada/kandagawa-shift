@@ -18,11 +18,25 @@ DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def step1_fetch():
-    print("\n=== STEP 1: Square APIからデータ取得 ===")
-    from fetch_square import run
-    n = run()
-    print(f"  完了: {n}行追記")
-    return n
+    """直近7日間の欠落日を自動補完して取得する。
+    Railwayの再デプロイでCSVが消えても、翌朝には自動で埋め戻される。"""
+    print("\n=== STEP 1: Square APIからデータ取得（直近7日の欠落補完）===")
+    from fetch_square import run, load_existing_dates
+    existing = load_existing_dates()
+    yesterday = date.today() - timedelta(days=1)
+    total_rows = 0
+    for days_ago in range(7, 0, -1):   # 7日前 → 昨日 の順に確認
+        target = yesterday - timedelta(days=days_ago - 1)
+        if str(target) in existing:
+            print(f"  {target}: 取得済みスキップ")
+            continue
+        try:
+            n = run(target)
+            total_rows += n
+        except Exception as e:
+            print(f"  {target}: 取得エラー ({e})")
+    print(f"  完了: 合計{total_rows}行追記")
+    return total_rows
 
 
 def step2_preprocess():
