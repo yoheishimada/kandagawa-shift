@@ -1173,8 +1173,11 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
             <span style="color:#c0392b;font-weight:500">リベイク</span> <span style="color:#555">¥{rebake_val:,}</span><br>
             <span style="color:#27ae60;font-weight:500">サンド</span> <span style="color:#555">¥{sand_val:,}</span>
         </div>
-        <div style="margin:0.2rem 0">{''.join(badges)}</div>
-        <div class="weather-info">{temp_txt} {rain_txt}</div>
+        <div style="min-height:1.8rem;display:flex;align-items:center;justify-content:center;gap:0.3rem;flex-wrap:wrap">{''.join(badges)}</div>
+        <div class="weather-info" style="line-height:1.6">
+            <div>{temp_txt}</div>
+            <div>{rain_txt}</div>
+        </div>
         <div class="range-row">
             <span>¥{bear_val//1000}k</span>
             <div class="range-track">
