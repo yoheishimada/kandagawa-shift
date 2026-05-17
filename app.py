@@ -1784,8 +1784,8 @@ for p in plan_products:
 plan_df = pd.DataFrame(plan_rows, index=plan_date_labels).T
 plan_df.index.name = "商品名"
 
-# 売上行のプレースホルダー（テーブルの上に表示するため先に確保）
-sales_row_placeholder = st.empty()
+# 売上カードのコンテナを先に確保（st.container はここに描画位置を固定する）
+sales_container = st.container()
 
 # 編集可能テーブル
 edited_df = st.data_editor(
@@ -1796,20 +1796,21 @@ edited_df = st.data_editor(
     column_config={col: st.column_config.NumberColumn(col, min_value=0, step=1, format="%d") for col in plan_date_labels},
 )
 
-# 編集後の数量 × 単価で売上を再計算
+# 編集後の数量 × 単価で売上を再計算（NaN・None は 0 扱い）
 TAX_RATE = 1.08
 sales_by_day = {}
 for col in plan_date_labels:
     total = 0
     for p in edited_df.index:
-        qty = edited_df.loc[p, col]
+        raw = edited_df.loc[p, col]
+        qty = int(raw) if (raw is not None and pd.notna(raw)) else 0
         price = latest_prices.get(p, 0)
         total += qty * price * TAX_RATE
     sales_by_day[col] = int(total)
 weekly_sales_total = sum(sales_by_day.values())
 
-# 売上行をプレースホルダーに描画（テーブルの上に表示される）
-with sales_row_placeholder.container():
+# 売上カードをコンテナに描画（テーブルの上に表示される）
+with sales_container:
     sales_cols = st.columns(len(plan_date_labels) + 1)
     for i, (col_label, sales_val) in enumerate(sales_by_day.items()):
         with sales_cols[i]:
