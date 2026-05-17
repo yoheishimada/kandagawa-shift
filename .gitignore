@@ -1,1 +1,7 @@
 kandagawa_shift_key.json
+.env
+.scheduler_pid
+.last_update_date
+models.pkl
+__pycache__/
+*.pyc

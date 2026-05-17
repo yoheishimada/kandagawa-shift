@@ -7,6 +7,16 @@ import csv
 import requests
 from datetime import date, timedelta
 
+# .env ファイルがあれば読み込む（ローカル開発用）
+_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+if os.path.exists(_env_path):
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _k, _v = _line.split("=", 1)
+                os.environ.setdefault(_k.strip(), _v.strip())
+
 ACCESS_TOKEN = os.environ.get("SQUARE_ACCESS_TOKEN", "")
 LOCATION_ID  = os.environ.get("SQUARE_LOCATION_ID", "EMF8KF9VJ6RRN")
 DATA_DIR     = os.path.dirname(os.path.abspath(__file__))
