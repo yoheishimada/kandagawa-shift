@@ -665,9 +665,27 @@ def fetch_forecast(start: str, end: str):
         return None  # 呼び出し元で判定
 
 
+def get_recent_products(days=14):
+    """直近N日間にPOSで売上のあった商品セットを返す"""
+    dataset = load_dataset()
+    if not dataset:
+        return set()
+    records = dataset.get("records", [])
+    cutoff = (date.today() - timedelta(days=days)).isoformat()
+    recent = set()
+    for r in records:
+        if r["date"] < cutoff:
+            continue
+        for k, v in r.items():
+            if k.startswith("qty_") and v and v > 0:
+                recent.add(k[4:])
+    return recent
+
+
 def get_lineup(models):
     """スプレッドシートの商品構成（EXCEL_PRODUCT_ORDER）をPOS商品名にマッピングして返す。
-    廃番品の混入・新商品の漏れを防ぐため、スプレッドシートを唯一の正として固定する。"""
+    廃番品の混入・新商品の漏れを防ぐため、スプレッドシートを唯一の正として固定する。
+    サンドイッチ・リベイクは直近14日間に売上のある商品のみに絞る。"""
     model_products = list(models.get("product_models", {}).keys())
     lineup = []
     seen = set()
@@ -696,14 +714,16 @@ def get_lineup(models):
                 seen.add(best)
 
     # サンドイッチ・リベイク二次製品はEXCEL_PRODUCT_ORDERに含まれないため
-    # モデルにある該当商品を別途追加する
+    # 直近14日間に売上のある商品のみを追加する
+    recent_products = get_recent_products(days=14)
     for p in model_products:
         if p in seen:
             continue
         cat = categorize_product(p)
         if cat in SANDWICH_CATEGORIES or cat in REBAKE_CATEGORIES:
-            lineup.append(p)
-            seen.add(p)
+            if p in recent_products:   # 直近14日に実績がある商品のみ
+                lineup.append(p)
+                seen.add(p)
 
     return lineup
 
