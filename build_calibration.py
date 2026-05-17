@@ -115,16 +115,81 @@ def heat_features(temp_max: float) -> dict:
     }
 
 
-def make_features(dt_str: str, weather: dict) -> list:
+_LAG_BASELINE = 70000
+_LAG_DEFAULTS = {
+    "sales_lag_7": _LAG_BASELINE, "sales_lag_28": _LAG_BASELINE,
+    "sales_lag_365": _LAG_BASELINE, "sales_ma7": _LAG_BASELINE,
+    "sales_ma28": _LAG_BASELINE, "yoy_ratio": 1.0, "momentum": 1.0,
+}
+
+
+def post_holiday_features(dt: date) -> dict:
+    _ZERO = {"is_post_long_holiday": 0, "days_after_long_holiday": 0}
+    if _jpholiday.is_holiday(dt):
+        return _ZERO
+    streak = 0
+    streak_end = None
+    for look_back in range(1, 31):
+        check = dt - timedelta(days=look_back)
+        if _jpholiday.is_holiday(check):
+            if streak == 0:
+                streak_end = check
+            streak += 1
+        else:
+            if streak >= 3:
+                days_after = (dt - streak_end).days
+                if 1 <= days_after <= 7:
+                    return {"is_post_long_holiday": 1, "days_after_long_holiday": days_after}
+                break
+            streak = 0
+    return _ZERO
+
+
+def make_features(dt_str: str, weather: dict, sales_map: dict = None) -> list:
     """app.py の make_features() と完全に一致させること（特徴量の数・順序）"""
     d = date.fromisoformat(dt_str)
     w = weather.get(dt_str, {})
     m, wd = d.month, d.weekday()
+    woy = d.isocalendar()[1]
     sk = sakura_features(d)
     ts = tsuyu_features(d)
     ht = heat_features(w.get("temp_max", 20))
+    ph = post_holiday_features(d)
+    # ラグ特徴量（sales_mapがあれば計算、なければデフォルト値）
+    lf = _LAG_DEFAULTS.copy()
+    if sales_map:
+        base_wd = d.weekday()
+        def lookup(offset):
+            target = d - timedelta(days=offset)
+            if offset % 7 == 0:
+                for w_ in range(7):
+                    cand = (target - timedelta(weeks=w_))
+                    if cand.isoformat() in sales_map and cand.weekday() == base_wd:
+                        return sales_map[cand.isoformat()]
+            for delta in range(4):
+                for sign in [0, 1, -1]:
+                    cand = (target + timedelta(days=delta*sign)).isoformat()
+                    if cand in sales_map:
+                        return sales_map[cand]
+            return None
+        def ma(days):
+            vals = [sales_map[k] for i in range(1, days+1)
+                    if (k := (d - timedelta(days=i)).isoformat()) in sales_map]
+            return sum(vals)/len(vals) if vals else None
+        s7, s28, s365 = lookup(7), lookup(28), lookup(365)
+        ma7, ma28 = ma(7), ma(28)
+        yoy = max(0.5, min(2.0, ma28/s365)) if (s365 and s365 > 0 and ma28) else 1.0
+        mom = max(0.5, min(2.0, ma7/ma28))  if (ma7  and ma28 and ma28 > 0) else 1.0
+        lf = {
+            "sales_lag_7":   s7   if s7   else _LAG_BASELINE,
+            "sales_lag_28":  s28  if s28  else _LAG_BASELINE,
+            "sales_lag_365": s365 if s365 else _LAG_BASELINE,
+            "sales_ma7":     ma7  if ma7  else _LAG_BASELINE,
+            "sales_ma28":    ma28 if ma28 else _LAG_BASELINE,
+            "yoy_ratio": yoy, "momentum": mom,
+        }
     return [
-        d.year, m, d.day, wd,
+        d.year, m, d.day, wd, woy,
         int(wd >= 5), int(_jpholiday.is_holiday(d)),
         int(in_period(dt_str, SCHOOL_HOLIDAYS)),
         int(in_period(dt_str, WASEDA_HOLIDAYS)),
@@ -136,8 +201,14 @@ def make_features(dt_str: str, weather: dict) -> list:
         sk["sakura_score"], sk["days_from_mankai"], sk["is_sakura_peak"],
         ts["is_tsuyu"], ts["days_into_tsuyu"],
         ht["heat_excess"], ht["is_hot_day"], ht["is_very_hot"],
+        1020,  # prev_close_min（キャリブレーション時はデフォルト値）
+        lf["sales_lag_7"], lf["sales_lag_28"], lf["sales_lag_365"],
+        lf["sales_ma7"], lf["sales_ma28"],
+        lf["yoy_ratio"], lf["momentum"],
+        ph["is_post_long_holiday"], ph["days_after_long_holiday"],
         np.sin(2*np.pi*m/12), np.cos(2*np.pi*m/12),
         np.sin(2*np.pi*wd/7), np.cos(2*np.pi*wd/7),
+        np.sin(2*np.pi*woy/52), np.cos(2*np.pi*woy/52),
     ]
 
 
@@ -203,6 +274,7 @@ def main():
     records = dataset["records"]
     pos_products_all = dataset["products"]  # 全POS商品名リスト
     weather = build_weather_from_dataset(records)
+    sales_map = {r["date"]: r["total_sales"] for r in records if "total_sales" in r}
     print(f"  {len(records)} 日分のデータ、{len(pos_products_all)} 商品")
 
     print("[3/4] models.pkl を読み込み中...")
@@ -255,7 +327,7 @@ def main():
                     continue
 
                 # 当日の全POSモデルの予測値を合算（複数SKUを1シート商品へ集約）
-                X = np.array([make_features(dt_str, weather)])
+                X = np.array([make_features(dt_str, weather, sales_map)])
                 ml_total = 0.0
                 for pos_name in pos_models_found:
                     try:
