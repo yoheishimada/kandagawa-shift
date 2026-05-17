@@ -1810,18 +1810,27 @@ for col in plan_date_labels:
 weekly_sales_total = sum(sales_by_day.values())
 
 # 売上カードをコンテナに描画（テーブルの上に表示される）
+# st.columns ループを避け、単一の st.markdown にまとめてWebSocketメッセージ数を削減
 with sales_container:
-    sales_cols = st.columns(len(plan_date_labels) + 1)
-    for i, (col_label, sales_val) in enumerate(sales_by_day.items()):
-        with sales_cols[i]:
-            st.markdown(
-                f'<div style="background:#f5f9fd;border:1px solid #d0e4f4;border-radius:8px;'
-                f'padding:0.5rem 0.6rem;text-align:center;margin-bottom:0.4rem;">'
-                f'<div style="font-size:0.65rem;color:#7aafd4;font-weight:600;letter-spacing:0.08em">{col_label}</div>'
-                f'<div style="font-size:1.0rem;font-weight:700;color:#1a1a1a">¥{sales_val:,}</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
+    day_cards = "".join(
+        f'<div style="flex:1;background:#f5f9fd;border:1px solid #d0e4f4;border-radius:8px;'
+        f'padding:0.5rem 0.4rem;text-align:center;">'
+        f'<div style="font-size:0.62rem;color:#7aafd4;font-weight:600;letter-spacing:0.06em">{col_label}</div>'
+        f'<div style="font-size:0.95rem;font-weight:700;color:#1a1a1a">¥{sales_val:,}</div>'
+        f'</div>'
+        for col_label, sales_val in sales_by_day.items()
+    )
+    total_card = (
+        f'<div style="flex:1;background:#eaf2fb;border:1px solid #b0cfe8;border-radius:8px;'
+        f'padding:0.5rem 0.4rem;text-align:center;">'
+        f'<div style="font-size:0.62rem;color:#4a7fa8;font-weight:600;letter-spacing:0.06em">週合計</div>'
+        f'<div style="font-size:0.95rem;font-weight:700;color:#1a1a1a">¥{weekly_sales_total:,}</div>'
+        f'</div>'
+    )
+    st.markdown(
+        f'<div style="display:flex;gap:0.4rem;margin-bottom:0.5rem;">{day_cards}{total_card}</div>',
+        unsafe_allow_html=True,
+    )
     with sales_cols[-1]:
         st.markdown(
             f'<div style="background:#eaf2fb;border:1px solid #b0cfe8;border-radius:8px;'
