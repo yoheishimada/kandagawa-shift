@@ -1195,7 +1195,7 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
 
     weekday_num = date.fromisoformat(r["date"]).weekday()  # 5=土 6=日
     if weekday_num == 5:
-        wd_color = "#2c7be5"   # 土: 青
+        wd_color = "#7aafd4"   # 土: 青
     elif weekday_num == 6 or r["is_holiday"]:
         wd_color = "#c0392b"   # 日・祝: 赤
     else:
@@ -1230,9 +1230,9 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
         <div class="weekday" style="color:{wd_color}">{r['weekday']}</div>
         <div class="sales-amount">¥{cur_val:,}</div>
         <div style="font-size:0.68rem;margin:0.18rem 0 0.22rem;letter-spacing:0.01em;line-height:1.7">
-            <span style="color:#2c7be5;font-weight:500">パン</span> <span style="color:#555">¥{bread_val:,}</span><br>
-            <span style="color:#c0392b;font-weight:500">リベイク</span> <span style="color:#555">¥{rebake_val:,}</span><br>
-            <span style="color:#27ae60;font-weight:500">サンド</span> <span style="color:#555">¥{sand_val:,}</span>
+            <span style="color:#7aafd4;font-weight:500">パン</span> <span style="color:#555">¥{bread_val:,}</span><br>
+            <span style="color:#c4887a;font-weight:500">リベイク</span> <span style="color:#555">¥{rebake_val:,}</span><br>
+            <span style="color:#7ab89a;font-weight:500">サンド</span> <span style="color:#555">¥{sand_val:,}</span>
         </div>
         <div style="min-height:1.8rem;display:flex;align-items:center;justify-content:center;gap:0.3rem;flex-wrap:wrap">{''.join(badges)}</div>
         <div class="weather-info" style="line-height:1.6">
@@ -1262,15 +1262,15 @@ bull_vals  = [r["predicted_sales"] for r in all_results["bull"]]
 fig = go.Figure()
 fig.add_trace(go.Bar(
     x=dates_label, y=[r["bread_sales"] for r in results],
-    name="パン類", marker_color="#2c7be5",
+    name="パン類", marker_color="#7aafd4",
 ))
 fig.add_trace(go.Bar(
     x=dates_label, y=[r["rebake_sales"] for r in results],
-    name="リベイク", marker_color="#c0392b",
+    name="リベイク", marker_color="#c4887a",
 ))
 fig.add_trace(go.Bar(
     x=dates_label, y=[r["sandwich_sales"] for r in results],
-    name="サンドイッチ", marker_color="#27ae60",
+    name="サンドイッチ", marker_color="#7ab89a",
 ))
 fig.update_layout(
     barmode="stack",
@@ -1464,24 +1464,24 @@ st.markdown('<div class="section-header">週間売上予測サマリー</div>', 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.markdown(
-        f'<div style="padding:0.9rem 1rem;background:#fff;border-left:4px solid #2c7be5;border-top:1px solid #e8e4de;border-right:1px solid #e8e4de;border-bottom:1px solid #e8e4de;border-radius:8px;">'
-        f'<div style="font-size:0.6rem;color:#2c7be5;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">パン類</div>'
+        f'<div style="padding:0.9rem 1rem;background:#f5f9fd;border-left:4px solid #7aafd4;border-top:1px solid #e8e4de;border-right:1px solid #e8e4de;border-bottom:1px solid #e8e4de;border-radius:8px;">'
+        f'<div style="font-size:0.6rem;color:#7aafd4;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">パン類</div>'
         f'<div style="font-size:1.25rem;font-weight:700;color:#1a1a1a">¥{bread_weekly:,}</div>'
         f'<div style="font-size:0.7rem;color:#bbb">日平均 ¥{bread_weekly//7:,}</div></div>',
         unsafe_allow_html=True,
     )
 with col2:
     st.markdown(
-        f'<div style="padding:0.9rem 1rem;background:#fff;border-left:4px solid #c0392b;border-top:1px solid #e8e4de;border-right:1px solid #e8e4de;border-bottom:1px solid #e8e4de;border-radius:8px;">'
-        f'<div style="font-size:0.6rem;color:#c0392b;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">リベイク</div>'
+        f'<div style="padding:0.9rem 1rem;background:#fff;border-left:4px solid #c4887a;border-top:1px solid #e8e4de;border-right:1px solid #e8e4de;border-bottom:1px solid #e8e4de;border-radius:8px;">'
+        f'<div style="font-size:0.6rem;color:#c4887a;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">リベイク</div>'
         f'<div style="font-size:1.25rem;font-weight:700;color:#1a1a1a">¥{rebake_weekly:,}</div>'
         f'<div style="font-size:0.7rem;color:#bbb">日平均 ¥{rebake_weekly//7:,}</div></div>',
         unsafe_allow_html=True,
     )
 with col3:
     st.markdown(
-        f'<div style="padding:0.9rem 1rem;background:#fff;border-left:4px solid #27ae60;border-top:1px solid #e8e4de;border-right:1px solid #e8e4de;border-bottom:1px solid #e8e4de;border-radius:8px;">'
-        f'<div style="font-size:0.6rem;color:#27ae60;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">サンドイッチ</div>'
+        f'<div style="padding:0.9rem 1rem;background:#f5fbf8;border-left:4px solid #7ab89a;border-top:1px solid #e8e4de;border-right:1px solid #e8e4de;border-bottom:1px solid #e8e4de;border-radius:8px;">'
+        f'<div style="font-size:0.6rem;color:#7ab89a;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">サンドイッチ</div>'
         f'<div style="font-size:1.25rem;font-weight:700;color:#1a1a1a">¥{sand_weekly:,}</div>'
         f'<div style="font-size:0.7rem;color:#bbb">日平均 ¥{sand_weekly//7:,}</div></div>',
         unsafe_allow_html=True,
@@ -1502,17 +1502,17 @@ fig = go.Figure()
 fig.add_trace(go.Bar(
     name="パン類", x=chart_dates,
     y=[r["bread_sales"] for r in results],
-    marker_color="#2c7be5",
+    marker_color="#7aafd4",
 ))
 fig.add_trace(go.Bar(
     name="リベイク", x=chart_dates,
     y=[r["rebake_sales"] for r in results],
-    marker_color="#c0392b",
+    marker_color="#c4887a",
 ))
 fig.add_trace(go.Bar(
     name="サンドイッチ", x=chart_dates,
     y=[r["sandwich_sales"] for r in results],
-    marker_color="#27ae60",
+    marker_color="#7ab89a",
 ))
 fig.update_layout(
     barmode="stack",
@@ -1570,7 +1570,7 @@ if sheet_stats:
             rec_color = "#d35400"
         else:
             rec = "○ 適正"
-            rec_color = "#27ae60"
+            rec_color = "#7ab89a"
 
         # ML精度の色付け
         ratio = s.get("ml_vs_actual_ratio")
@@ -1580,7 +1580,7 @@ if sheet_stats:
             ml_note = ""
         elif 0.85 <= ratio <= 1.15:
             ml_cell = f"{ratio:.2f}"
-            ml_color = "#27ae60"
+            ml_color = "#7ab89a"
             ml_note = ""
         elif 0.7 <= ratio < 0.85 or 1.15 < ratio <= 1.3:
             ml_cell = f"{ratio:.2f}"
