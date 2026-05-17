@@ -1255,8 +1255,8 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
     """
     col.markdown(card_html, unsafe_allow_html=True)
 
-# ── 売上グラフ ──
-st.markdown('<div class="section-header">売上予測グラフ</div>', unsafe_allow_html=True)
+# ── 売上グラフ（弱気 / 普通 / 強気 比較）──
+st.markdown('<div class="section-header">弱気・普通・強気 予測比較</div>', unsafe_allow_html=True)
 
 dates_label = [f"{r['date'][5:]}({r['weekday']})" for r in results]
 bear_vals  = [r["predicted_sales"] for r in all_results["bear"]]
@@ -1265,25 +1265,25 @@ bull_vals  = [r["predicted_sales"] for r in all_results["bull"]]
 
 fig = go.Figure()
 fig.add_trace(go.Bar(
-    x=dates_label, y=[r["bread_sales"] for r in results],
-    name="パン類", marker_color="#7aafd4",
+    x=dates_label, y=bear_vals,
+    name="弱気", marker_color="#b8cfe0", opacity=0.9,
 ))
 fig.add_trace(go.Bar(
-    x=dates_label, y=[r["rebake_sales"] for r in results],
-    name="リベイク", marker_color="#c4887a",
+    x=dates_label, y=normal_vals,
+    name="普通", marker_color="#6b8fa8", opacity=0.9,
 ))
 fig.add_trace(go.Bar(
-    x=dates_label, y=[r["sandwich_sales"] for r in results],
-    name="サンドイッチ", marker_color="#7ab89a",
+    x=dates_label, y=bull_vals,
+    name="強気", marker_color="#3a5f78", opacity=0.9,
 ))
 fig.update_layout(
-    barmode="stack",
+    barmode="group",
     paper_bgcolor="#ffffff", plot_bgcolor="#fafaf8",
     font=dict(color="#888", family="Inter, Noto Sans JP", size=12),
-    height=360, margin=dict(t=20, b=20, l=10, r=10),
+    height=320, margin=dict(t=20, b=20, l=10, r=10),
     yaxis=dict(gridcolor="#ebebeb", tickformat="¥,.0f", tickfont=dict(size=11)),
     xaxis=dict(gridcolor="#ebebeb", tickfont=dict(size=11)),
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, bgcolor="rgba(0,0,0,0)", font=dict(size=13)),
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, bgcolor="rgba(0,0,0,0)", font=dict(size=12)),
     hovermode="x unified",
 )
 st.plotly_chart(fig, use_container_width=True)
