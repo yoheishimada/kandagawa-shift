@@ -8,12 +8,16 @@ import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 import jpholiday as _jpholiday
+from PIL import Image
 
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 
+_favicon_path = os.path.join(DATA_DIR, "favicon.png")
+_favicon = Image.open(_favicon_path) if os.path.exists(_favicon_path) else "🍞"
+
 st.set_page_config(
     page_title="神田川ベーカリー 製造数予測",
-    page_icon="🍞",
+    page_icon=_favicon,
     layout="wide",
     initial_sidebar_state="expanded",
 )

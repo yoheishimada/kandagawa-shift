@@ -5,3 +5,4 @@ kandagawa_shift_key.json
 models.pkl
 __pycache__/
 *.pyc
+venv312/
