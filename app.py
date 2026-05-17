@@ -1768,7 +1768,14 @@ plan_date_labels = [
     for r in results
 ]
 
-# DataFrame構築（AIの初期予測値を入力済みにする）
+# 表示名クリーニング（製造計画テーブルと同じ処理）
+def _clean_name(name):
+    return name.replace("1斤", "").replace("食パン", "").strip()
+
+# 元名→表示名のマッピング（売上計算で元名を使うため）
+plan_name_map = {p: _clean_name(p) for p in plan_products}
+
+# DataFrame構築（表示名をインデックスに使用）
 plan_rows = {}
 for p in plan_products:
     row = []
@@ -1779,7 +1786,7 @@ for p in plan_products:
             or r["rebake_products"].get(p, 0)
         )
         row.append(int(qty) if qty else 0)
-    plan_rows[p] = row
+    plan_rows[plan_name_map[p]] = row
 
 plan_df = pd.DataFrame(plan_rows, index=plan_date_labels).T
 plan_df.index.name = "商品名"
@@ -1808,15 +1815,19 @@ edited_df = st.data_editor(
     },
 )
 
+# 表示名→元名の逆引きマップ（単価取得に使用）
+plan_name_reverse = {v: k for k, v in plan_name_map.items()}
+
 # 編集後の数量 × 単価で売上を再計算（NaN・None は 0 扱い）
 TAX_RATE = 1.08
 sales_by_day = {}
 for col in plan_date_labels:
     total = 0
-    for p in edited_df.index:
-        raw = edited_df.loc[p, col]
+    for display_name in edited_df.index:
+        raw = edited_df.loc[display_name, col]
         qty = int(raw) if (raw is not None and pd.notna(raw)) else 0
-        price = latest_prices.get(p, 0)
+        orig_name = plan_name_reverse.get(display_name, display_name)
+        price = latest_prices.get(orig_name, latest_prices.get(display_name, 0))
         total += qty * price * TAX_RATE
     sales_by_day[col] = int(total)
 weekly_sales_total = sum(sales_by_day.values())
