@@ -1755,11 +1755,12 @@ else:
 st.markdown('<div class="section-header">生産計画表</div>', unsafe_allow_html=True)
 st.caption("数字はその場で修正できます。確定したら「CSVダウンロード」で吉田さんのスプレッドシートに貼り付けてください。")
 
-# 全商品をスプレッドシート順で統合（二次加工品・その他を除外）
-plan_products = sort_by_sheet([
-    p for p in lineup
-    if p not in SECONDARY_PRODUCTS and categorize_product(p) != "その他"
-])
+# 製造計画テーブルと同じ順番：パン → サンドイッチ → リベイク
+plan_products = (
+    [p for p in bread_products_all    if p not in SECONDARY_PRODUCTS] +
+    [p for p in sandwich_products_all if p not in SECONDARY_PRODUCTS] +
+    [p for p in rebake_products_all   if p not in SECONDARY_PRODUCTS]
+)
 
 # 列名：「月 5/19」形式
 plan_date_labels = [
