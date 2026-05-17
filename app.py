@@ -25,6 +25,8 @@ st.set_page_config(
 def check_password():
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
+    if "is_admin" not in st.session_state:
+        st.session_state.is_admin = False
     if not st.session_state.authenticated:
         st.markdown("""
         <div style='padding: 2.5rem 0 1.5rem 0; border-bottom: 1px solid #e8e4de; margin-bottom: 1.8rem;'>
@@ -34,8 +36,13 @@ def check_password():
         """, unsafe_allow_html=True)
         password = st.text_input("パスワードを入力してください", type="password")
         if st.button("ログイン", use_container_width=True):
-            if password in ("Kandagawa0222", "Fang_Admiration_2010"):
+            if password == "Fang_Admiration_2010":
                 st.session_state.authenticated = True
+                st.session_state.is_admin = True
+                st.rerun()
+            elif password == "Kandagawa0222":
+                st.session_state.authenticated = True
+                st.session_state.is_admin = False
                 st.rerun()
             else:
                 st.error("パスワードが違います")
@@ -484,14 +491,35 @@ def load_calibration():
     return {}
 
 
+_DEFAULT_SHEET_URL = (
+    "https://docs.google.com/spreadsheets/d/"
+    "1hLmRFfAm_kfjr_hk-G4GhGBwvJ5g_sNU/export?format=csv&gid=753872113"
+)
+_SHEET_CONFIG_PATH = os.path.join(DATA_DIR, "sheet_config.json")
+
+
+def load_sheet_url() -> str:
+    """sheet_config.json からスプレッドシートURLを読む。なければデフォルトを返す。"""
+    try:
+        with open(_SHEET_CONFIG_PATH, encoding="utf-8") as f:
+            cfg = json.load(f)
+        return cfg.get("sheet_url", _DEFAULT_SHEET_URL)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return _DEFAULT_SHEET_URL
+
+
+def save_sheet_url(url: str):
+    """スプレッドシートURLを sheet_config.json に保存する。"""
+    cfg = {"sheet_url": url, "updated_at": date.today().isoformat()}
+    with open(_SHEET_CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, ensure_ascii=False, indent=2)
+
+
 @st.cache_data(ttl=3600)
 def fetch_spreadsheet_data():
     """スプレッドシートから製造数・売切・ロス実績を取得"""
     import csv, io
-    SHEET_URL = (
-        "https://docs.google.com/spreadsheets/d/"
-        "1hLmRFfAm_kfjr_hk-G4GhGBwvJ5g_sNU/export?format=csv&gid=753872113"
-    )
+    SHEET_URL = load_sheet_url()
     SECTION_TYPES = {"定番", "季節", "サンド", "二次"}
     today = date.today()
 
@@ -1181,6 +1209,39 @@ with st.sidebar:
     if st.button("使い方マニュアル", use_container_width=True):
         st.switch_page("pages/manual.py")
     st.caption("天気予報: Open-Meteo")
+
+    # ── 管理者専用設定 ──────────────────────────────────────────
+    if st.session_state.get("is_admin"):
+        st.divider()
+        st.markdown("### 管理者設定")
+        with st.expander("スプレッドシート設定", expanded=False):
+            current_url = load_sheet_url()
+            st.caption("現在のURL")
+            st.code(current_url, language=None)
+            new_url = st.text_input(
+                "新しいシートのURL（gidが変わった月に更新）",
+                value=current_url,
+                key="admin_sheet_url_input",
+                help="GoogleスプレッドシートのURLをそのまま貼り付けてください。\n"
+                     "例: https://docs.google.com/spreadsheets/d/.../edit?gid=123456",
+            )
+            if st.button("保存する", key="admin_save_sheet_url"):
+                # 通常のブラウザURLをexport用に変換
+                save_url = new_url.strip()
+                if "/edit" in save_url:
+                    # https://docs.google.com/spreadsheets/d/ID/edit?gid=GID
+                    # → https://docs.google.com/spreadsheets/d/ID/export?format=csv&gid=GID
+                    save_url = save_url.replace("/edit", "/export")
+                    save_url = save_url.replace("?gid=", "?format=csv&gid=")
+                    save_url = save_url.split("#")[0]   # #gid=... を除去
+                save_sheet_url(save_url)
+                st.cache_data.clear()   # fetch_spreadsheet_data のキャッシュをクリア
+                st.success(
+                    "保存しました。\n\n"
+                    "スプレッドシートの参照先が更新されます。\n"
+                    "アプリを再起動しても設定が消えないよう、"
+                    "`sheet_config.json` をGitにコミットしてください。"
+                )
 
 # 予報取得（open-meteoは最大16日先まで対応）
 end_date = start_date + timedelta(days=6)
