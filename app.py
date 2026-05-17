@@ -1644,33 +1644,56 @@ else:
     st.caption("実績データが見つかりません。calibration.pkl を生成してください。")
 
 # ── 凡例 ──
-with st.expander("ℹ️ 凡例・説明"):
-    st.markdown(f"""
-**予測モード**
-- 🔵 **弱気**: 過去の同条件で下位25%の水準（廃棄リスク最小）
-- 🟢 **普通**: 過去の中央値（標準的な製造数）
-- 🔴 **強気**: 過去の同条件で上位25%の水準（売り切れリスク最小）
-
-**バッジ**
-- 🟡 **祝** 祝日 / 🔵 **学休** 小中学校休業 / 🟣 **早大休** 早稲田大学休業
-- 💧 **昼雨** 11〜14時降雨 / 💧 **夕雨** 16〜18時降雨
-
-**売上予測について**
-- 税込み表示（消費税8%・軽減税率）
-- 最新単価 × 予測数量で積み上げ計算
-- カード下部のバーは弱気〜強気の予測レンジを示します
-- 安全在庫バッファーは製造数のみに適用（売上計算には影響しません）
-
-**実績インジケーター（製造数テーブル）**
-- 🔴 **売切↑**: 過去33%以上の日で売り切れ → 製造数の増加を検討
-- 🟡 **廃棄↓**: 平均ロス率15%超 → 製造数の削減またはバッファー引き下げを検討
-
-**実績分析レポートの推奨コメント**
-- ↑ 製造数を増やす: 売切率33%超かつロス率20%未満
-- ↓ 製造数を減らす: ロス率33%超かつ売切率20%未満
-- △ やや増やす: 売切率15〜33%程度
-- ○ 適正: バランスが取れている
-""")
+with st.expander("凡例・説明"):
+    st.markdown("""
+<style>
+.legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem 2rem; margin-top: 0.5rem; }
+.legend-block h4 { font-size: 0.7rem !important; font-weight: 600 !important; color: #aaa !important;
+    letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 0.5rem 0; }
+.legend-row { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.35rem; font-size: 0.82rem; }
+.legend-chip { display: inline-block; font-size: 0.68rem; font-weight: 600; padding: 0.05rem 0.45rem;
+    border-radius: 4px; white-space: nowrap; }
+.lc-bear   { background: #eef4fb; color: #5a8bbf; border: 1px solid #c5dff0; }
+.lc-normal { background: #f5f5f3; color: #555;    border: 1px solid #ddd; }
+.lc-bull   { background: #fdf0f0; color: #b06060; border: 1px solid #f0c8c8; }
+.lc-holiday{ background: #fdf6e3; color: #9a7d3a; border: 1px solid #e8d8a0; }
+.lc-school { background: #eef4fb; color: #5a8bbf; border: 1px solid #c5dff0; }
+.lc-waseda { background: #f5eef8; color: #7a5a9a; border: 1px solid #d8c0e8; }
+.lc-rain   { background: #edf2fa; color: #607090; border: 1px solid #c0cce0; }
+.lc-sellout{ background: #fde8e8; color: #a05050; border: 1px solid #e8b8b8; }
+.lc-loss   { background: #fdf6e3; color: #9a7d3a; border: 1px solid #e8d8a0; }
+.legend-desc { color: #666; font-size: 0.82rem; line-height: 1.5; }
+</style>
+<div class="legend-grid">
+  <div class="legend-block">
+    <h4>予測モード</h4>
+    <div class="legend-row"><span class="legend-chip lc-bear">弱気</span><span class="legend-desc">下位25%水準 — 廃棄リスク最小</span></div>
+    <div class="legend-row"><span class="legend-chip lc-normal">普通</span><span class="legend-desc">中央値 — 標準的な製造数</span></div>
+    <div class="legend-row"><span class="legend-chip lc-bull">強気</span><span class="legend-desc">上位25%水準 — 売切リスク最小</span></div>
+  </div>
+  <div class="legend-block">
+    <h4>バッジ</h4>
+    <div class="legend-row"><span class="legend-chip lc-holiday">祝</span><span class="legend-desc">祝日</span></div>
+    <div class="legend-row"><span class="legend-chip lc-school">学休</span><span class="legend-desc">小中学校休業</span></div>
+    <div class="legend-row"><span class="legend-chip lc-waseda">早大休</span><span class="legend-desc">早稲田大学休業</span></div>
+    <div class="legend-row"><span class="legend-chip lc-rain">昼雨</span><span class="legend-desc">11〜14時降雨</span>&nbsp;<span class="legend-chip lc-rain">夕雨</span><span class="legend-desc">16〜18時降雨</span></div>
+  </div>
+  <div class="legend-block">
+    <h4>実績インジケーター</h4>
+    <div class="legend-row"><span class="legend-chip lc-sellout">売切↑</span><span class="legend-desc">33%以上の日で売切 — 増産を検討</span></div>
+    <div class="legend-row"><span class="legend-chip lc-loss">廃棄↓</span><span class="legend-desc">平均ロス率15%超 — 削減を検討</span></div>
+  </div>
+  <div class="legend-block">
+    <h4>売上予測</h4>
+    <div class="legend-desc">
+      税込表示（消費税8%・軽減税率）<br>
+      最新単価 × 予測数量で積み上げ計算<br>
+      カード下部の予測幅バーは弱気〜強気のレンジ<br>
+      バッファーは製造数のみに適用
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 # ── マニュアル ────────────────────────────────────────────────
 if show_manual:
