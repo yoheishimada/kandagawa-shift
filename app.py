@@ -75,6 +75,7 @@ html, body, [class*="css"] {
     background: #ffffff; border: 1px solid #e8e4de; border-radius: 12px;
     padding: 1.1rem 0.7rem; text-align: center; transition: all 0.18s;
     box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    min-height: 320px; display: flex; flex-direction: column; justify-content: space-between;
 }
 .day-card:hover { border-color: #1a1a1a; box-shadow: 0 4px 16px rgba(0,0,0,0.09); transform: translateY(-2px); }
 .day-card .date-label { font-size: 0.68rem; color: #bbb; letter-spacing: 0.08em; margin-bottom: 0.2rem; }
@@ -1145,13 +1146,14 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
 
     wd_color = "#c0392b" if r["is_weekend"] or r["is_holiday"] else "#2c2520"
     if not weather_available:
-        temp_txt = ""
-        rain_txt = "🌥️ 天気データなし"
+        temp_txt = "🌥️ 天気データなし"
+        rain_txt = "—"
     else:
-        rain_txt = ""
+        temp_txt = f"🌡{r['temp_max']:.0f}°C" if r["temp_max"] else "🌡—"
         if r["rain_lunch"] > 0 or r["rain_evening"] > 0:
             rain_txt = f"昼{r['rain_lunch']:.1f}mm 夕{r['rain_evening']:.1f}mm"
-        temp_txt = f"🌡{r['temp_max']:.0f}°C" if r["temp_max"] else ""
+        else:
+            rain_txt = "☀️ 晴れ"
 
     # 弱気〜強気の範囲バー
     total_range = max(bull_val - bear_val, 1)
@@ -1246,7 +1248,7 @@ def build_product_table(products_list, results, date_cols, key_field="products",
             # 食パン1斤バッジ（2斤に統合済み）
             if any(kin1 in p or p in kin1 for kin1, _ in SHOKUPAN_PAIRS):
                 indicator += ' <span class="tbl-badge tbl-secondary">→2斤</span>'
-            p_display = p.replace("1斤", "").strip()
+            p_display = p.replace("1斤", "").replace("食パン", "").strip()
             cells = f"<td>{p_display}{indicator}</td>"
             for r in results:
                 qty = r[key_field].get(p, 0)
