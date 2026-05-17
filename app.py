@@ -1784,16 +1784,28 @@ for p in plan_products:
 plan_df = pd.DataFrame(plan_rows, index=plan_date_labels).T
 plan_df.index.name = "商品名"
 
-# 売上カードのコンテナを先に確保（st.container はここに描画位置を固定する）
+# 列幅をピクセルで固定（HTML ヘッダーと data_editor を揃えるため）
+_IDX_W  = 200   # 商品名列
+_COL_W  = 100   # 日付列 × 7
+_N      = len(plan_date_labels)
+_TOTAL  = _IDX_W + _COL_W * _N   # 900px
+
+# 売上カードのコンテナを先に確保
 sales_container = st.container()
 
-# 編集可能テーブル
+# 編集可能テーブル（列幅を固定値で指定）
 edited_df = st.data_editor(
     plan_df,
-    use_container_width=True,
+    use_container_width=False,
+    width=_TOTAL + 4,   # +4 は内部ボーダー分
     num_rows="fixed",
     key="plan_editor",
-    column_config={col: st.column_config.NumberColumn(col, min_value=0, step=1, format="%d") for col in plan_date_labels},
+    column_config={
+        "商品名": st.column_config.Column(width=_IDX_W),
+        **{col: st.column_config.NumberColumn(
+                col, min_value=0, step=1, format="%d", width=_COL_W)
+           for col in plan_date_labels},
+    },
 )
 
 # 編集後の数量 × 単価で売上を再計算（NaN・None は 0 扱い）
@@ -1809,39 +1821,30 @@ for col in plan_date_labels:
     sales_by_day[col] = int(total)
 weekly_sales_total = sum(sales_by_day.values())
 
-# 売上カードをコンテナに描画（テーブルの上に表示される）
-# 週合計を左側（商品名列の上）、日別売上を各曜日列の上に配置
+# 売上カードを data_editor の列幅にぴったり合わせて描画
 with sales_container:
-    # 週合計カード（左側・商品名列の幅に合わせて flex:2）
     total_card = (
-        f'<div style="flex:2;min-width:0;background:#eaf2fb;border:1px solid #b0cfe8;border-radius:8px;'
-        f'padding:0.55rem 0.6rem;display:flex;flex-direction:column;justify-content:center;">'
-        f'<div style="font-size:0.6rem;color:#4a7fa8;font-weight:600;letter-spacing:0.08em;margin-bottom:0.15rem">週合計 売上予測</div>'
-        f'<div style="font-size:1.15rem;font-weight:700;color:#1a1a1a">¥{weekly_sales_total:,}</div>'
+        f'<div style="width:{_IDX_W}px;flex-shrink:0;background:#eaf2fb;'
+        f'border:1px solid #b0cfe8;border-radius:8px;'
+        f'padding:0.5rem 0.7rem;display:flex;flex-direction:column;justify-content:center;">'
+        f'<div style="font-size:0.58rem;color:#4a7fa8;font-weight:600;letter-spacing:0.08em;margin-bottom:0.1rem">週合計 売上予測</div>'
+        f'<div style="font-size:1.1rem;font-weight:700;color:#1a1a1a">¥{weekly_sales_total:,}</div>'
         f'</div>'
     )
-    # 日別カード（各曜日列の上・flex:1 × 7）
     day_cards = "".join(
-        f'<div style="flex:1;min-width:0;background:#f5f9fd;border:1px solid #d0e4f4;border-radius:8px;'
+        f'<div style="width:{_COL_W}px;flex-shrink:0;background:#f5f9fd;'
+        f'border:1px solid #d0e4f4;border-radius:8px;'
         f'padding:0.45rem 0.2rem;text-align:center;">'
-        f'<div style="font-size:0.58rem;color:#7aafd4;font-weight:600;letter-spacing:0.04em;white-space:nowrap;">{col_label}</div>'
+        f'<div style="font-size:0.58rem;color:#7aafd4;font-weight:600;letter-spacing:0.04em">{col_label}</div>'
         f'<div style="font-size:0.88rem;font-weight:700;color:#1a1a1a">¥{sales_val:,}</div>'
         f'</div>'
         for col_label, sales_val in sales_by_day.items()
     )
     st.markdown(
-        f'<div style="display:flex;gap:0.35rem;margin-bottom:0.4rem;">{total_card}{day_cards}</div>',
+        f'<div style="display:flex;gap:2px;width:{_TOTAL}px;margin-bottom:0.4rem;">'
+        f'{total_card}{day_cards}</div>',
         unsafe_allow_html=True,
     )
-    with sales_cols[-1]:
-        st.markdown(
-            f'<div style="background:#eaf2fb;border:1px solid #b0cfe8;border-radius:8px;'
-            f'padding:0.5rem 0.6rem;text-align:center;margin-bottom:0.4rem;">'
-            f'<div style="font-size:0.65rem;color:#4a7fa8;font-weight:600;letter-spacing:0.08em">週合計</div>'
-            f'<div style="font-size:1.0rem;font-weight:700;color:#1a1a1a">¥{weekly_sales_total:,}</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
 
 # 週合計列を追加してCSV出力
 export_df = edited_df.copy()
