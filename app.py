@@ -1169,7 +1169,12 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
     if r["is_rainy_evening"]: badges.append('<span class="badge badge-rain">夕雨</span>')
 
     weekday_num = date.fromisoformat(r["date"]).weekday()  # 5=土 6=日
-    wd_color = "#c0392b" if r["is_weekend"] or r["is_holiday"] else "#2c2520"
+    if weekday_num == 5:
+        wd_color = "#2c7be5"   # 土: 青
+    elif weekday_num == 6 or r["is_holiday"]:
+        wd_color = "#c0392b"   # 日・祝: 赤
+    else:
+        wd_color = "#2c2520"   # 平日: 黒
     if weekday_num == 5:
         card_cls = "day-card saturday"
     elif weekday_num == 6:
