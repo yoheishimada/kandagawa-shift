@@ -1178,6 +1178,7 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
             <div>{temp_txt}</div>
             <div>{rain_txt}</div>
         </div>
+        <div style="font-size:0.58rem;color:#bbb;letter-spacing:0.08em;margin-bottom:0.15rem">予測幅</div>
         <div class="range-row">
             <span>¥{bear_val//1000}k</span>
             <div class="range-track">
