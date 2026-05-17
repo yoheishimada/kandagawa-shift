@@ -720,6 +720,42 @@ def build_sales_map(records):
     return {r["date"]: r["total_sales"] for r in records if "total_sales" in r}
 
 
+_SANDWICH_KW = ["バゲットサンド", "バケットサンド", "パニーノ", "照り焼きチキンサンド", "スモークチキンとたまご", "プチサンドセット"]
+_REBAKE_KW   = ["クロックムッシュ", "タルティーヌ", "フレンチトースト", "ニース風ホット", "カリカリハニー",
+                "明太フランス", "ピザトースト", "本日のトースト", "ナンテールトースト", "カリカリハニーバタートースト"]
+
+def _cat_simple(product):
+    for kw in _SANDWICH_KW:
+        if kw in product: return "sandwich"
+    for kw in _REBAKE_KW:
+        if kw in product: return "rebake"
+    return "bread"
+
+def compute_category_ratios(records, prices):
+    """過去実績から直近重み付きのカテゴリ別売上比率を算出（直近30日×3、90日×2、他×1）"""
+    if not records:
+        return {"bread": 0.894, "sandwich": 0.075, "rebake": 0.031}
+    last_date = date.fromisoformat(records[-1]["date"])
+    bread_w = sand_w = rebake_w = 0.0
+    for r in records:
+        days_ago = (last_date - date.fromisoformat(r["date"])).days
+        weight = 3.0 if days_ago <= 30 else 2.0 if days_ago <= 90 else 1.0
+        for k, v in r.items():
+            if not k.startswith("qty_") or not v:
+                continue
+            product = k[4:]
+            price = prices.get(product, 0)
+            sales = v * price * weight
+            cat = _cat_simple(product)
+            if cat == "sandwich": sand_w += sales
+            elif cat == "rebake": rebake_w += sales
+            else: bread_w += sales
+    total_w = bread_w + sand_w + rebake_w
+    if total_w <= 0:
+        return {"bread": 0.894, "sandwich": 0.075, "rebake": 0.031}
+    return {"bread": bread_w / total_w, "sandwich": sand_w / total_w, "rebake": rebake_w / total_w}
+
+
 def compute_lag_features(dt_str, sales_map):
     """予測対象日のラグ特徴量を過去実績から計算する。
     7/28日ラグは同曜日優先ルックアップ：データ境界外でも正しい曜日の値を取得。
@@ -826,7 +862,7 @@ def find_calib_for_pos(pos_name, calib_dict):
     return None
 
 
-def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffer_pct, calib=None, prev_close_min=1020, sales_map=None):
+def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffer_pct, calib=None, prev_close_min=1020, sales_map=None, cat_ratios=None):
     lineup_set = set(lineup)
     calib = calib or {}
     sales_models = models.get("sales_models", {})
@@ -931,17 +967,14 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
             bread_excl += extra_raw * latest_prices.get(base_prod, 0)
 
         # ── 売上合計はsales_modelsを正として使用（ダブルカウント防止）──
-        # 商品別モデルの合計はカテゴリ比率の按分にのみ使用する
+        # 内訳は過去実績の重み付き比率（直近を優先）で按分
         sales_pred_excl = max(1.0, sales_models[mode].predict(X)[0]) if sales_models else (
             bread_excl + sandwich_excl + rebake_excl
         )
-        total_product_excl = bread_excl + sandwich_excl + rebake_excl
-        if total_product_excl > 0:
-            bread_ratio    = bread_excl    / total_product_excl
-            sandwich_ratio = sandwich_excl / total_product_excl
-            rebake_ratio   = rebake_excl   / total_product_excl
-        else:
-            bread_ratio, sandwich_ratio, rebake_ratio = 1.0, 0.0, 0.0
+        ratios = cat_ratios or {"bread": 0.894, "sandwich": 0.075, "rebake": 0.031}
+        bread_ratio    = ratios["bread"]
+        sandwich_ratio = ratios["sandwich"]
+        rebake_ratio   = ratios["rebake"]
 
         predicted_sales_taxed = int(sales_pred_excl * 1.08)
         w = weather.get(dt_str, {})
@@ -970,9 +1003,9 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
     return results
 
 
-def predict_all_modes(start_date, weather, models, lineup, latest_prices, buffer_pct, calib=None, prev_close_min=1020, sales_map=None):
+def predict_all_modes(start_date, weather, models, lineup, latest_prices, buffer_pct, calib=None, prev_close_min=1020, sales_map=None, cat_ratios=None):
     return {
-        mode: predict_week(start_date, weather, models, lineup, latest_prices, mode, buffer_pct, calib, prev_close_min, sales_map)
+        mode: predict_week(start_date, weather, models, lineup, latest_prices, mode, buffer_pct, calib, prev_close_min, sales_map, cat_ratios)
         for mode in ["bear", "normal", "bull"]
     }
 
@@ -1089,7 +1122,8 @@ if not weather_available:
 
 # 全モード予測（ラグ特徴量: 過去実績から直近トレンドを自動反映）
 sales_map = build_sales_map(dataset["records"])
-all_results = predict_all_modes(start_date, weather, models, lineup, latest_prices, buffer_pct, calib, prev_close_min, sales_map)
+cat_ratios = compute_category_ratios(dataset["records"], dataset.get("latest_unit_prices", {}))
+all_results = predict_all_modes(start_date, weather, models, lineup, latest_prices, buffer_pct, calib, prev_close_min, sales_map, cat_ratios)
 results = all_results[mode]
 
 # ── 週間売上カード ──
