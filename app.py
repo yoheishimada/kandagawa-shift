@@ -36,12 +36,9 @@ def check_password():
         """, unsafe_allow_html=True)
         password = st.text_input("パスワードを入力してください", type="password")
         if st.button("ログイン", use_container_width=True):
-            if password == "Fang_Admiration_2010":
+            if password == "Kandagawa0222":
                 st.session_state.authenticated = True
                 st.session_state.is_admin = True
-                st.rerun()
-            elif password == "Kandagawa0222":
-                st.session_state.authenticated = True
                 st.session_state.is_admin = False
                 st.rerun()
             else:
