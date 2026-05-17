@@ -1098,7 +1098,7 @@ sheet_order = {name: idx for idx, name in enumerate(sheet_data.keys())}
 
 # ── サイドバー ──
 with st.sidebar:
-    st.markdown("### ⚙️ 設定")
+    st.markdown("### 設定")
     start_date = st.date_input(
         "予測開始日",
         value=date.today() + timedelta(days=1),
@@ -1113,7 +1113,7 @@ with st.sidebar:
     st.divider()
 
     # 前日の最終レジ時刻（モデルへの入力特徴量）
-    st.markdown("### 🕐 前日の最終レジ時刻")
+    st.markdown("### 前日の最終レジ時刻")
     last_register = st.selectbox(
         "前日の最終レジ時刻",
         options=["〜15時台", "16時台", "17時台", "18時台以降"],
@@ -1157,7 +1157,7 @@ if days_ahead > FORECAST_LIMIT_DAYS:
     # 予報範囲外：APIを呼ばずに即フォールバック
     weather = None
     st.info(
-        f"📅 予測開始日（{start_date}）は今日から{days_ahead}日先のため、"
+        f"予測開始日（{start_date}）は今日から{days_ahead}日先のため、"
         f"天気予報データが利用できません（対応範囲：{FORECAST_LIMIT_DAYS}日先まで）。\n\n"
         "**天候データなしで過去の実績パターンのみから売上予測を行っています。**"
         "気温・降雨の影響は考慮されていないため、精度が低下する場合があります。",
@@ -1167,7 +1167,7 @@ else:
         weather = fetch_forecast(start_date.isoformat(), end_date.isoformat())
     if weather is None:
         st.info(
-            "⚠️ 天気予報の取得に失敗しました。"
+            "天気予報の取得に失敗しました。"
             "インターネット接続を確認してください。\n\n"
             "**天候データなしで過去の実績パターンのみから売上予測を行っています。**"
             "気温・降雨の影響は考慮されていないため、精度が低下する場合があります。",
