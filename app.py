@@ -1146,7 +1146,14 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
     if r["is_rainy_lunch"]:   badges.append('<span class="badge badge-rain">昼雨</span>')
     if r["is_rainy_evening"]: badges.append('<span class="badge badge-rain">夕雨</span>')
 
+    weekday_num = date.fromisoformat(r["date"]).weekday()  # 5=土 6=日
     wd_color = "#c0392b" if r["is_weekend"] or r["is_holiday"] else "#2c2520"
+    if weekday_num == 5:
+        card_bg = "background:#eef6fb;"   # 土: 水色
+    elif weekday_num == 6:
+        card_bg = "background:#fdf0f3;"   # 日: 薄ピンク
+    else:
+        card_bg = ""
     if not weather_available:
         temp_txt = "天気データなし"
         rain_txt = "—"
@@ -1166,7 +1173,7 @@ for col, r, bear_r, bull_r in zip(cols, results, all_results["bear"], all_result
     rebake_val = r["rebake_sales"]
 
     card_html = f"""
-    <div class="day-card">
+    <div class="day-card" style="{card_bg}">
         <div class="date-label">{r['date'][5:]}</div>
         <div class="weekday" style="color:{wd_color}">{r['weekday']}</div>
         <div class="sales-amount">¥{cur_val:,}</div>
