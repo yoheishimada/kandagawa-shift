@@ -2,6 +2,10 @@ import streamlit as st
 
 st.set_page_config(page_title='使い方マニュアル | 神田川ベーカリー', layout='wide')
 
+# 未認証の場合はメインページへ戻す
+if not st.session_state.get("authenticated", False):
+    st.switch_page("app.py")
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
