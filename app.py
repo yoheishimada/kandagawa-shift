@@ -1488,10 +1488,10 @@ with col3:
     )
 with col4:
     st.markdown(
-        f'<div style="padding:0.9rem 1rem;background:#1a1a1a;border-radius:8px;">'
-        f'<div style="font-size:0.6rem;color:#888;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">合計</div>'
-        f'<div style="font-size:1.25rem;font-weight:700;color:#fff">¥{total_weekly:,}</div>'
-        f'<div style="font-size:0.7rem;color:#666">日平均 ¥{total_weekly//7:,}</div></div>',
+        f'<div style="padding:0.9rem 1rem;background:#fff;border-left:4px solid #1a1a1a;border-top:1px solid #e8e4de;border-right:1px solid #e8e4de;border-bottom:1px solid #e8e4de;border-radius:8px;">'
+        f'<div style="font-size:0.6rem;color:#1a1a1a;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem">合計</div>'
+        f'<div style="font-size:1.25rem;font-weight:700;color:#1a1a1a">¥{total_weekly:,}</div>'
+        f'<div style="font-size:0.7rem;color:#bbb">日平均 ¥{total_weekly//7:,}</div></div>',
         unsafe_allow_html=True,
     )
 
