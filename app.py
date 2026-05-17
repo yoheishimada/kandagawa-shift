@@ -1751,6 +1751,59 @@ if sheet_stats:
 else:
     st.caption("実績データが見つかりません。calibration.pkl を生成してください。")
 
+# ── 生産計画表（編集・CSV出力） ─────────────────────────────────────
+st.markdown('<div class="section-header">生産計画表</div>', unsafe_allow_html=True)
+st.caption("数字はその場で修正できます。確定したら「CSVダウンロード」で吉田さんのスプレッドシートに貼り付けてください。")
+
+# 全商品をスプレッドシート順で統合（二次加工品・その他を除外）
+plan_products = sort_by_sheet([
+    p for p in lineup
+    if p not in SECONDARY_PRODUCTS and categorize_product(p) != "その他"
+])
+
+# 列名：「月 5/19」形式
+plan_date_labels = [
+    f"{r['weekday']} {int(r['date'][5:7])}/{int(r['date'][8:10])}"
+    for r in results
+]
+
+# DataFrame構築（AIの初期予測値を入力済みにする）
+plan_rows = {}
+for p in plan_products:
+    row = []
+    for r in results:
+        qty = (
+            r["bread_products"].get(p, 0)
+            or r["sandwich_products"].get(p, 0)
+            or r["rebake_products"].get(p, 0)
+        )
+        row.append(int(qty) if qty else 0)
+    plan_rows[p] = row
+
+plan_df = pd.DataFrame(plan_rows, index=plan_date_labels).T
+plan_df.index.name = "商品名"
+
+# 編集可能テーブル
+edited_df = st.data_editor(
+    plan_df,
+    use_container_width=True,
+    num_rows="fixed",
+    key="plan_editor",
+    column_config={col: st.column_config.NumberColumn(col, min_value=0, step=1, format="%d") for col in plan_date_labels},
+)
+
+# 週合計列を追加してCSV出力
+export_df = edited_df.copy()
+export_df["週合計"] = export_df.sum(axis=1)
+csv_bytes = export_df.reset_index().to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
+st.download_button(
+    label="CSVダウンロード",
+    data=csv_bytes,
+    file_name=f"生産計画_{start_date.isoformat()}.csv",
+    mime="text/csv",
+    use_container_width=True,
+)
+
 # ── 凡例 ──
 with st.expander("凡例・説明"):
     st.markdown("""
