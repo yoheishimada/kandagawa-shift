@@ -1810,25 +1810,27 @@ for col in plan_date_labels:
 weekly_sales_total = sum(sales_by_day.values())
 
 # 売上カードをコンテナに描画（テーブルの上に表示される）
-# st.columns ループを避け、単一の st.markdown にまとめてWebSocketメッセージ数を削減
+# 週合計を左側（商品名列の上）、日別売上を各曜日列の上に配置
 with sales_container:
+    # 週合計カード（左側・商品名列の幅に合わせて flex:2）
+    total_card = (
+        f'<div style="flex:2;min-width:0;background:#eaf2fb;border:1px solid #b0cfe8;border-radius:8px;'
+        f'padding:0.55rem 0.6rem;display:flex;flex-direction:column;justify-content:center;">'
+        f'<div style="font-size:0.6rem;color:#4a7fa8;font-weight:600;letter-spacing:0.08em;margin-bottom:0.15rem">週合計 売上予測</div>'
+        f'<div style="font-size:1.15rem;font-weight:700;color:#1a1a1a">¥{weekly_sales_total:,}</div>'
+        f'</div>'
+    )
+    # 日別カード（各曜日列の上・flex:1 × 7）
     day_cards = "".join(
-        f'<div style="flex:1;background:#f5f9fd;border:1px solid #d0e4f4;border-radius:8px;'
-        f'padding:0.5rem 0.4rem;text-align:center;">'
-        f'<div style="font-size:0.62rem;color:#7aafd4;font-weight:600;letter-spacing:0.06em">{col_label}</div>'
-        f'<div style="font-size:0.95rem;font-weight:700;color:#1a1a1a">¥{sales_val:,}</div>'
+        f'<div style="flex:1;min-width:0;background:#f5f9fd;border:1px solid #d0e4f4;border-radius:8px;'
+        f'padding:0.45rem 0.2rem;text-align:center;">'
+        f'<div style="font-size:0.58rem;color:#7aafd4;font-weight:600;letter-spacing:0.04em;white-space:nowrap;">{col_label}</div>'
+        f'<div style="font-size:0.88rem;font-weight:700;color:#1a1a1a">¥{sales_val:,}</div>'
         f'</div>'
         for col_label, sales_val in sales_by_day.items()
     )
-    total_card = (
-        f'<div style="flex:1;background:#eaf2fb;border:1px solid #b0cfe8;border-radius:8px;'
-        f'padding:0.5rem 0.4rem;text-align:center;">'
-        f'<div style="font-size:0.62rem;color:#4a7fa8;font-weight:600;letter-spacing:0.06em">週合計</div>'
-        f'<div style="font-size:0.95rem;font-weight:700;color:#1a1a1a">¥{weekly_sales_total:,}</div>'
-        f'</div>'
-    )
     st.markdown(
-        f'<div style="display:flex;gap:0.4rem;margin-bottom:0.5rem;">{day_cards}{total_card}</div>',
+        f'<div style="display:flex;gap:0.35rem;margin-bottom:0.4rem;">{total_card}{day_cards}</div>',
         unsafe_allow_html=True,
     )
     with sales_cols[-1]:
