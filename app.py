@@ -1266,18 +1266,26 @@ bear_vals  = [r["predicted_sales"] for r in all_results["bear"]]
 normal_vals= [r["predicted_sales"] for r in all_results["normal"]]
 bull_vals  = [r["predicted_sales"] for r in all_results["bull"]]
 
+# 選択中モードを濃く、それ以外は薄く
+_bar_colors = {
+    "bear":   {"bear": "#4a7fa8", "normal": "#c8dce8", "bull": "#c8dce8"},
+    "normal": {"bear": "#c8dce8", "normal": "#4a7fa8", "bull": "#c8dce8"},
+    "bull":   {"bear": "#c8dce8", "normal": "#c8dce8", "bull": "#4a7fa8"},
+}
+_bc = _bar_colors[mode]
+
 fig = go.Figure()
 fig.add_trace(go.Bar(
     x=dates_label, y=bear_vals,
-    name="弱気", marker_color="#b8cfe0", opacity=0.9,
+    name="弱気", marker_color=_bc["bear"],
 ))
 fig.add_trace(go.Bar(
     x=dates_label, y=normal_vals,
-    name="普通", marker_color="#6b8fa8", opacity=0.9,
+    name="普通", marker_color=_bc["normal"],
 ))
 fig.add_trace(go.Bar(
     x=dates_label, y=bull_vals,
-    name="強気", marker_color="#3a5f78", opacity=0.9,
+    name="強気", marker_color=_bc["bull"],
 ))
 fig.update_layout(
     barmode="group",
