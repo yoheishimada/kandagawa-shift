@@ -1022,9 +1022,12 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
 
         # ── 売上合計はsales_modelsを正として使用（ダブルカウント防止）──
         # 内訳は過去実績の重み付き比率（直近を優先）で按分
-        sales_pred_excl = max(1.0, sales_models[mode].predict(X)[0]) if sales_models else (
-            bread_excl + sandwich_excl + rebake_excl
-        )
+        # mode_scale適用済みの値を使うことで弱気>普通>強気の逆転を防ぐ
+        if sales_models:
+            normal_sales = max(1.0, sales_models["normal"].predict(X)[0])
+            sales_pred_excl = max(1.0, normal_sales * mode_scale)
+        else:
+            sales_pred_excl = bread_excl + sandwich_excl + rebake_excl
         ratios = cat_ratios or {"bread": 0.797, "sandwich": 0.077, "rebake": 0.126}
         bread_ratio    = ratios["bread"]
         sandwich_ratio = ratios["sandwich"]
