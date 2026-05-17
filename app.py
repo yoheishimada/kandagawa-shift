@@ -745,9 +745,10 @@ def build_sales_map(records):
     return {r["date"]: r["total_sales"] for r in records if "total_sales" in r}
 
 
-_SANDWICH_KW = ["バゲットサンド", "バケットサンド", "パニーノ", "照り焼きチキンサンド", "スモークチキンとたまご", "プチサンドセット"]
+_SANDWICH_KW = ["バゲットサンド", "バケットサンド", "パニーノ", "サンドイッチ", "プチサンドセット"]
 _REBAKE_KW   = ["クロックムッシュ", "タルティーヌ", "フレンチトースト", "ニース風ホット", "カリカリハニー",
-                "明太フランス", "ピザトースト", "本日のトースト", "ナンテールトースト", "カリカリハニーバタートースト"]
+                "明太フランス", "ピザトースト", "本日のトースト", "ナンテールトースト", "カリカリハニーバタートースト",
+                "グリル野菜", "ホットサンド"]
 
 def _cat_simple(product):
     for kw in _SANDWICH_KW:
@@ -757,28 +758,31 @@ def _cat_simple(product):
     return "bread"
 
 def compute_category_ratios(records, prices):
-    """過去実績から直近重み付きのカテゴリ別売上比率を算出（直近30日×3、90日×2、他×1）"""
+    """直近30日の実績からカテゴリ別売上比率を算出。
+    リベイク・サンドイッチの直近動向を正確に反映させるため短期ウィンドウのみ使用。"""
+    _FALLBACK = {"bread": 0.797, "sandwich": 0.077, "rebake": 0.126}
     if not records:
-        return {"bread": 0.894, "sandwich": 0.075, "rebake": 0.031}
+        return _FALLBACK
     last_date = date.fromisoformat(records[-1]["date"])
-    bread_w = sand_w = rebake_w = 0.0
+    bread_s = sand_s = rebake_s = 0.0
     for r in records:
         days_ago = (last_date - date.fromisoformat(r["date"])).days
-        weight = 3.0 if days_ago <= 30 else 2.0 if days_ago <= 90 else 1.0
+        if days_ago > 30:      # 直近30日のみ
+            continue
         for k, v in r.items():
             if not k.startswith("qty_") or not v:
                 continue
             product = k[4:]
             price = prices.get(product, 0)
-            sales = v * price * weight
+            sales = v * price
             cat = _cat_simple(product)
-            if cat == "sandwich": sand_w += sales
-            elif cat == "rebake": rebake_w += sales
-            else: bread_w += sales
-    total_w = bread_w + sand_w + rebake_w
-    if total_w <= 0:
-        return {"bread": 0.894, "sandwich": 0.075, "rebake": 0.031}
-    return {"bread": bread_w / total_w, "sandwich": sand_w / total_w, "rebake": rebake_w / total_w}
+            if cat == "sandwich": sand_s += sales
+            elif cat == "rebake": rebake_s += sales
+            else: bread_s += sales
+    total_s = bread_s + sand_s + rebake_s
+    if total_s <= 0:
+        return _FALLBACK
+    return {"bread": bread_s / total_s, "sandwich": sand_s / total_s, "rebake": rebake_s / total_s}
 
 
 def compute_lag_features(dt_str, sales_map):
@@ -996,7 +1000,7 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
         sales_pred_excl = max(1.0, sales_models[mode].predict(X)[0]) if sales_models else (
             bread_excl + sandwich_excl + rebake_excl
         )
-        ratios = cat_ratios or {"bread": 0.894, "sandwich": 0.075, "rebake": 0.031}
+        ratios = cat_ratios or {"bread": 0.797, "sandwich": 0.077, "rebake": 0.126}
         bread_ratio    = ratios["bread"]
         sandwich_ratio = ratios["sandwich"]
         rebake_ratio   = ratios["rebake"]
