@@ -368,6 +368,12 @@ SHOKUPAN_PAIRS = [
 # 1斤商品（表示上は「2斤に統合」バッジを付ける）
 SHOKUPAN_1KIN = {pair[0] for pair in SHOKUPAN_PAIRS}
 
+# 割引バージョン → 通常バージョン のマッピング
+# 同一商品を14時以降に値引きして販売するもの。製造数は通常版に合算する。
+DISCOUNT_MERGE = {
+    "照り焼きチキンのサンドイッチ（２割引）": "照り焼きチキンのサンドイッチ",
+}
+
 # 二次加工品のためにベースパンへ追加する数量（曜日別平均、4年間の実績から算出）
 # キー: ベースパン名, 値: {weekday(0=月〜6=日): 追加個数}
 SECONDARY_UPLIFT = {
@@ -714,10 +720,12 @@ def get_lineup(models):
                 seen.add(best)
 
     # サンドイッチ・リベイク二次製品はEXCEL_PRODUCT_ORDERに含まれないため
-    # 直近14日間に売上のある商品のみを追加する
+    # 直近14日間に売上のある商品のみを追加する（割引バージョンは除外）
     recent_products = get_recent_products(days=14)
     for p in model_products:
         if p in seen:
+            continue
+        if p in DISCOUNT_MERGE:        # 割引版は通常版に合算するので除外
             continue
         cat = categorize_product(p)
         if cat in SANDWICH_CATEGORIES or cat in REBAKE_CATEGORIES:
@@ -965,6 +973,19 @@ def predict_week(start_date, weather, models, lineup, latest_prices, mode, buffe
                 if qty_buf > 0:
                     bread_products[product] = qty_buf
                 bread_excl += qty * price
+
+        # ── 割引バージョン → 通常バージョンへ数量合算 ──────────────
+        for discount_p, base_p in DISCOUNT_MERGE.items():
+            if discount_p not in models["product_models"]:
+                continue
+            # 割引版の予測数量を取得して通常版に加算
+            disc_model = models["product_models"][discount_p]
+            disc_qty = max(0, disc_model.predict(X)[0]) * mode_scale
+            disc_qty_buf = int(np.ceil(disc_qty * (1 + buffer_pct / 100)))
+            if base_p in sandwich_products:
+                sandwich_products[base_p] = sandwich_products[base_p] + disc_qty_buf
+            elif base_p in bread_products:
+                bread_products[base_p] = bread_products[base_p] + disc_qty_buf
 
         # ── 食パン1斤→2斤 統合（製造は2斤単位のため）──────────────
         for kin1, kin2 in SHOKUPAN_PAIRS:
